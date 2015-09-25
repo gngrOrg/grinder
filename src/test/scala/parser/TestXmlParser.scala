@@ -7,7 +7,7 @@ import utils.XmlUtils
 class TestXmlParser {
 
   def parserTests = {
-    val file = new File(s"${System.getProperty("user.dir")}/src/test/resources/test-cases.xml")
+    val file = new File(s"${boot.Boot.UserDir}/data/test-cases.xml")
     val sourceXml = XmlUtils.loadXmlFromFile(file)
 
     val testCases = sourceXml \\ "test"
@@ -18,9 +18,9 @@ class TestXmlParser {
       val refValue = (test \ "reference-value").text
       val refHref = (test \ "reference-href").text
       val flagTitle = (test \ "flag-title").text
-      val flagValue = (test \ "flag-value").text
+      val flags = (test \ "flags" \\ "flag").map(_.text)
 
-      TestCase(title, href: String, refValue, refHref, flagTitle, flagValue)
+      TestCase(title, href: String, refValue, refHref, flagTitle, flags)
     }).toList
 
   }

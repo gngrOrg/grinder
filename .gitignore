@@ -1,3 +1,6 @@
 .idea
+*.swp
 target
 /project/target
+/data/*
+/nightly-unstable

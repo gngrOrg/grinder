@@ -4,7 +4,7 @@ import java.io.File
 
 import utils.XmlUtils
 
-case class TestCase(testTitle: String, testHref: String, refrenceValue: String, referenceHref: String, flagTitle: String, flagValue: String)
+case class TestCase(testTitle: String, testHref: String, refrenceValue: String, referenceHref: String, flagTitle: String, flags: Seq[String])
 
 class CssReftestXmlParser {
 
@@ -24,10 +24,10 @@ class CssReftestXmlParser {
       val flagTitle = (tdNodes(2) \\ "abbr").map(node => node.attribute("title").head.text).mkString(" ")
       val flagValue = (tdNodes(2) \\ "abbr").map(node => node.head.text).mkString(" ")
 
-      println("************ Processing ******  "+testTitle)
+      TestCase(testTitle, testHref, refrenceValue, refrenceHref, flagTitle, flagValue.split("\\s+").filter(_.length > 0))
+    }).filterNot(hasUnsupportedFlag)
 
-      TestCase(testTitle, testHref, refrenceValue, refrenceHref, flagTitle, flagValue)
-    }).filter(isUnsupportedFlag)
+    println("Supported test cases: " + testCases.length)
 
     val testCaseXml = <tests>
       {testCases.map(testCase => {
@@ -36,17 +36,24 @@ class CssReftestXmlParser {
           <test-href>{testCase.testHref}</test-href>
           <reference-value>{testCase.refrenceValue}</reference-value>
           <reference-href>{testCase.referenceHref}</reference-href>
-          <flag-title>{testCase.flagTitle}</flag-title>
-          <flag-value>{testCase.flagValue}</flag-value>
+          {
+            if (!testCase.flags.isEmpty) {
+              <flags>
+              {
+                testCase.flags.map { flag => <flag>{flag}</flag> }
+              }
+              </flags>
+            }
+          }
         </test>
       })}
     </tests>
 
-    XmlUtils.saveXmlFile("test-cases",testCaseXml.toString(),reftestXmlFile.getParent)
+    XmlUtils.saveXmlFile("test-cases",testCaseXml.toString(), boot.Boot.UserDir + "/data/")
 
   }
 
-  def isUnsupportedFlag: (TestCase) => Boolean = {
-    testCase => UNSUPPORTED_FLAGS.exists(flag => testCase.flagValue.split(" ").contains(flag))
+  def hasUnsupportedFlag: (TestCase) => Boolean = {
+    testCase => UNSUPPORTED_FLAGS.exists(flag => testCase.flags.contains(flag))
   }
 }

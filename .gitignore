@@ -4,3 +4,9 @@ target
 /project/target
 /data/*
 /nightly-unstable
+/.cache-main
+/.cache-tests
+/.classpath
+/.project
+/.settings/org.eclipse.core.resources.prefs
+/bin

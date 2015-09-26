@@ -1,6 +1,15 @@
 # grinder
 an apparatus to test [gngr](https://github.com/UprootLabs/gngr).
 
+## Status
+We are just getting started. We are currently trying to run the css2.1 test suite. More test-suites are [planned for the
+future](https://github.com/UprootLabs/grinder/issues/8).
+
+The test code uses the WebDriver protocol to navigate and screenshot the browser. The screenshots
+for the test and its reference are then compared.
+
+On `gngr` side, we are implementing a subset of the WebDriver protocol and will then run grinder against it.
+
 ## Getting started
 
 * `git clone` this repo.

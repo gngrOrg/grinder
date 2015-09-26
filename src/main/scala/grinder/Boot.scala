@@ -1,9 +1,6 @@
-package boot
+package grinder
 
 import java.io.File
-
-import parser.CssReftestXmlParser
-
 
 object Boot extends App{
   lazy val UserDir = {

@@ -1,8 +1,7 @@
-package utils
+package grinder
 
-import java.io.{File, FileReader}
-
-import scala.xml.{Elem, XML, NodeSeq}
+import java.io.File
+import scala.xml.{XML, NodeSeq}
 import scala.xml.parsing.XhtmlParser
 
 object XmlUtils {

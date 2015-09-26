@@ -1,8 +1,7 @@
-package parser
+package grinder
 
 import java.io.File
-
-import utils.XmlUtils
+import scala.xml.NodeSeq.seqToNodeSeq
 
 case class TestCase(testTitle: String, testHref: String, refrenceValue: String, referenceHref: String, flagTitle: String, flags: Seq[String])
 
@@ -49,7 +48,7 @@ class CssReftestXmlParser {
       })}
     </tests>
 
-    XmlUtils.saveXmlFile("test-cases",testCaseXml.toString(), boot.Boot.UserDir + "/data/")
+    XmlUtils.saveXmlFile("test-cases",testCaseXml.toString(), grinder.Boot.UserDir + "/data/")
 
   }
 

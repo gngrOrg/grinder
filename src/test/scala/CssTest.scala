@@ -9,9 +9,9 @@ import utils.BrowserDriver
 class CssTest extends BrowserDriver with Matchers with BeforeAndAfterEach {
 
   val COMPARISION_THRESHOLD = 50
-  private val resourceDir: String = s"${boot.Boot.UserDir}/nightly-unstable"
+  private val resourceDir: String = s"${grinder.Boot.UserDir}/nightly-unstable"
   private val referenceDirectory = s"file://$resourceDir/xhtml1"
-  private val imageDirectory: String = s"${boot.Boot.UserDir}/data/screenshot"
+  private val imageDirectory: String = s"${grinder.Boot.UserDir}/data/screenshot"
 
   protected def navigateToPage(link: String) = go.to(s"$referenceDirectory/$link")(driver)
 

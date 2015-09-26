@@ -1,13 +1,13 @@
 package parser
 
 import java.io.File
-
-import utils.XmlUtils
+import grinder.XmlUtils
+import grinder.TestCase
 
 class TestXmlParser {
 
   def parserTests = {
-    val file = new File(s"${boot.Boot.UserDir}/data/test-cases.xml")
+    val file = new File(s"${grinder.Boot.UserDir}/data/test-cases.xml")
     val sourceXml = XmlUtils.loadXmlFromFile(file)
 
     val testCases = sourceXml \\ "test"

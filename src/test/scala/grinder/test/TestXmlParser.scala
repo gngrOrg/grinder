@@ -1,4 +1,4 @@
-package parser
+package grinder.test
 
 import java.io.File
 import grinder.XmlUtils

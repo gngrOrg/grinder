@@ -1,4 +1,4 @@
-package utils
+package grinder.test
 
 import java.util.concurrent.TimeUnit
 

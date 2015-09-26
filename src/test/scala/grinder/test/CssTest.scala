@@ -1,10 +1,9 @@
+package grinder.test
+
 import java.awt.image.BufferedImage
 import java.io.File
 import javax.imageio.ImageIO
-
 import org.scalatest.{BeforeAndAfterEach, Matchers}
-import parser.TestXmlParser
-import utils.BrowserDriver
 
 class CssTest extends BrowserDriver with Matchers with BeforeAndAfterEach {
 

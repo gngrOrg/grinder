@@ -1,8 +1,6 @@
-package utils
+package grinder.test
 
-
-import org.openqa.selenium.logging.{LogEntry, LogEntries, LogType}
-import org.openqa.selenium.{JavascriptExecutor, By, WebElement}
+import org.openqa.selenium.{By, WebElement}
 import com.thoughtworks.selenium.Wait
 import scala.collection.JavaConversions._
 

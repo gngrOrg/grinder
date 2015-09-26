@@ -1,4 +1,4 @@
-package utils
+package grinder.test
 
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.firefox.FirefoxDriver

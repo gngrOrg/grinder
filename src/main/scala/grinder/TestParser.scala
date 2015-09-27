@@ -1,8 +1,6 @@
-package grinder.test
+package grinder;
 
 import java.io.File
-import grinder.XmlUtils
-import grinder.TestCase
 
 class TestXmlParser {
 

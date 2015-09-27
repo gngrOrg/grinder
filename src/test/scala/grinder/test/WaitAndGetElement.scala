@@ -5,7 +5,7 @@ import com.thoughtworks.selenium.Wait
 import scala.collection.JavaConversions._
 
 trait WaitAndGetElement {
-  this: Driver =>
+  this: BrowserDriver =>
   def waitAndGet(locator: By): WebElement = {
     new Wait(s"Could Not Find element: $locator") {
       def until(): Boolean = driver.findElements(locator).size() != 0

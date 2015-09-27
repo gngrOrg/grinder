@@ -2,8 +2,27 @@ package grinder.test
 
 import java.awt.image.BufferedImage
 import java.io.File
+import java.util.concurrent.TimeUnit
+
+import org.openqa.selenium.WebDriver
+import org.openqa.selenium.firefox.FirefoxDriver
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.FunSpec
+import org.scalatest.Matchers
+import org.scalatest.selenium.WebBrowser
+
 import javax.imageio.ImageIO
-import org.scalatest.{BeforeAndAfterEach, Matchers}
+
+trait BrowserDriver extends FunSpec with BeforeAndAfterAll with WebBrowser {
+  implicit val driver: WebDriver  = new FirefoxDriver()
+  driver.manage().window().maximize()
+  setTimeout()
+
+  private def setTimeout() {driver.manage().timeouts().implicitlyWait(20, TimeUnit.SECONDS)}
+
+  override protected def afterAll = driver.close()
+}
 
 class CssTest extends BrowserDriver with Matchers with BeforeAndAfterEach {
 

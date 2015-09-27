@@ -20,7 +20,7 @@ On `gngr` side, we are implementing a subset of the WebDriver protocol and will 
 ## Preparing the tests
 
 ```
-sbt run
+sbt run prepare
 ```
 
 This will parse and filter the tests from the css2.1 reference TOC. The details of the tests are stored in
@@ -30,7 +30,7 @@ This will parse and filter the tests from the css2.1 reference TOC. The details 
 ## Running the tests
 
 ```
-sbt test
+sbt run compare
 ```
 
-This will start the browser (currently, your default browser) and run the tests via the WebDriver API.
+This will start the browser (currently, Firefox) and run the tests via the WebDriver API.

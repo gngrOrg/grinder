@@ -73,7 +73,7 @@ class CssTest {
     val refImage: File = new File(s"$imageDirectory/$ref.png")
     val referenceImage = ImageIO.read(refImage)
 
-    val isExists = if (isEqualDimensions(testImage, referenceImage)) {
+    val isExists = if (hasEqualDimensions(testImage, referenceImage)) {
       val comparisons = for (
         w <- 0 until testImage.getWidth;
         h <- 0 until testImage.getHeight
@@ -89,8 +89,8 @@ class CssTest {
     isExists
   }
 
-  private def isEqualDimensions(testImage: BufferedImage, referenceImage: BufferedImage): Boolean = {
-    testImage.getWidth == referenceImage.getWidth && testImage.getWidth == referenceImage.getWidth
+  private def hasEqualDimensions(testImage: BufferedImage, referenceImage: BufferedImage): Boolean = {
+    testImage.getWidth == referenceImage.getWidth && testImage.getHeight == referenceImage.getHeight
   }
 
   /*

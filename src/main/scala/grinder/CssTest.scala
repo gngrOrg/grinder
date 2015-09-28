@@ -34,6 +34,8 @@ class CssTest(args:Seq[String]) {
   }
 
   def run() {
+    var passes = 0
+    var fails = 0
 
     try {
       driver.manage().window().maximize()
@@ -42,19 +44,26 @@ class CssTest(args:Seq[String]) {
 
       val parser = new TestXmlParser()
       val testCases = parser.parserTests
-      val selectedTests = testCases.drop(100).take(50)
+      val selectedTests = testCases.drop(2100).take(100)
       val pb = new ProgressBar("Test", selectedTests.length)
       pb.start()
       selectedTests.foreach { test =>
         navAndSnap(test.testHref)
         navAndSnap(test.referenceHref)
         val same = isScreenShotSame(enc(test.testHref), enc(test.referenceHref))
+        if (same) {
+          passes += 1
+        } else {
+          fails += 1
+        }
         pb.step()
       }
       pb.stop()
     } finally {
       driver.close()
     }
+    println("Fails : " + fails)
+    println("Passes: " + passes)
   }
 
   private var visited: Set[String] = Set()

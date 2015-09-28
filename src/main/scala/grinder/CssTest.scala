@@ -9,13 +9,26 @@ import org.openqa.selenium.firefox.FirefoxDriver
 import javax.imageio.ImageIO
 import me.tongfei.progressbar.ProgressBar
 
-class CssTest {
+class CssTest(args:Seq[String]) {
   private val COMPARISION_THRESHOLD = 50
   private val resourceDir: String = s"${grinder.Boot.UserDir}/nightly-unstable"
-  private val referenceDirectory = s"file://$resourceDir/xhtml1"
+  // private val referenceDirectory = s"file://$resourceDir/xhtml1"
+  private val referenceDirectory = s"localhost:8000//nightly-unstable/xhtml1"
   private val imageDirectory: String = s"${grinder.Boot.UserDir}/data/screenshot"
 
-  private val driver = new FirefoxDriver()
+  val browserName = args(0)
+
+  private val driver = browserName match {
+    case "gngr" => {
+      if (args.length > 1) {
+        new GngrDriver(args(1))
+      } else {
+        throw new InvalidConfigurationException("Please specify the key")
+      }
+    }
+    case "firefox" => new FirefoxDriver()
+  }
+
   private def navigateToPage(link: String) {
     driver.navigate.to(s"$referenceDirectory/$link")
   }

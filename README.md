@@ -18,6 +18,7 @@ On `gngr` side, we are implementing a subset of the WebDriver protocol and will 
 * Download [the CSS2.1 testsuite](http://test.csswg.org/suites/css21_dev/) from w3c. We use the `nightly-unstable` package and
   unzip it into the root folder of this repo.
 * Setup [sbt](http://www.scala-sbt.org/)
+* Run a local server on port 8000 in the root folder of this repo. Example: `python -m SimpleHTTPServer`.
 
 ## Preparing the tests
 

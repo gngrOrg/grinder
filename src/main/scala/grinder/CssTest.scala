@@ -9,7 +9,7 @@ import org.openqa.selenium.firefox.FirefoxDriver
 import javax.imageio.ImageIO
 import me.tongfei.progressbar.ProgressBar
 
-class CssTest(args:Seq[String]) {
+class CssTest(args: Seq[String]) {
   private val COMPARISION_THRESHOLD = 50
   private val resourceDir: String = s"${grinder.Boot.UserDir}/nightly-unstable"
   // private val referenceDirectory = s"file://$resourceDir/xhtml1"

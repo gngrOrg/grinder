@@ -34,6 +34,8 @@ class CssTest(args:Seq[String]) {
   }
 
   def run() {
+    Pause.init()
+
     var passes = 0
     var fails = 0
 
@@ -57,14 +59,29 @@ class CssTest(args:Seq[String]) {
           fails += 1
         }
         pb.step()
+        if (Pause.isPauseRequested) {
+          println(s"\n${Console.BOLD}Paused. Type `C` or `c` to continue, anything else to quit.${Console.RESET}")
+          val response = io.StdIn.readLine()
+          if (response.matches("[cC]")) {
+            Pause.init()
+            println("Continuing")
+          } else {
+            printStats()
+            throw new QuitRequestedException
+          }
+        }
       }
       pb.stop()
     } finally {
       driver.quit()
     }
+
+    printStats()
+
+    def printStats() = {
+      println("Fails : " + fails)
+      println("Passes: " + passes)
     }
-    println("Fails : " + fails)
-    println("Passes: " + passes)
   }
 
   private var visited: Set[String] = Set()

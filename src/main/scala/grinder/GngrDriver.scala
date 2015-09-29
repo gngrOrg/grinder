@@ -45,6 +45,8 @@ import javax.imageio.ImageIO
 import java.io.ByteArrayOutputStream
 import java.io.PipedInputStream
 import java.io.PipedOutputStream
+import java.security.MessageDigest
+import java.util.Base64
 
 class GngrDriver(authKey: String) extends WebDriver with TakesScreenshot {
   private val gngrWindow = new Window {
@@ -95,7 +97,10 @@ class GngrDriver(authKey: String) extends WebDriver with TakesScreenshot {
 
   private def getGrinderPort: Int = {
     execute(getGngrPort, (writer, is) => {
-      writer.write(s"GRINDER $authKey\r\n")
+      val digest = MessageDigest.getInstance("SHA-256");
+      val authKeyHash = digest.digest(authKey.getBytes("UTF-8"));
+      val authKeyHashB64 = Base64.getEncoder.encodeToString(authKeyHash)
+      writer.write(s"GRINDER $authKeyHashB64\r\n")
       writer.flush()
       val dis = new DataInputStream(is)
       val gsPort = dis.readInt()

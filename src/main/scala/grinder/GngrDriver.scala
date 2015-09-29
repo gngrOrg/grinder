@@ -169,7 +169,11 @@ class GngrDriver(authKey: String) extends WebDriver with TakesScreenshot {
 
   def navigate(): Navigation = gngrNavigation
 
-  def quit(): Unit = ???
+  def quit(): Unit = {
+    // TODO: Quit should also delete the profile (when profiles are implemented)
+    close()
+  }
+
   def switchTo(): org.openqa.selenium.WebDriver.TargetLocator = ???
 
   def getScreenshotAs[T](ot: OutputType[T]): T = {

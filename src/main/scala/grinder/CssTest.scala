@@ -60,7 +60,8 @@ class CssTest(args:Seq[String]) {
       }
       pb.stop()
     } finally {
-      driver.close()
+      driver.quit()
+    }
     }
     println("Fails : " + fails)
     println("Passes: " + passes)

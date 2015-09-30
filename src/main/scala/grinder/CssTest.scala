@@ -9,12 +9,15 @@ import org.openqa.selenium.firefox.FirefoxDriver
 import javax.imageio.ImageIO
 import me.tongfei.progressbar.ProgressBar
 
+case class TestResult(id: String, pass: Boolean)
+
 class CssTest(args: Seq[String]) {
   private val COMPARISION_THRESHOLD = 50
   private val resourceDir: String = s"${grinder.Boot.UserDir}/nightly-unstable"
   // private val referenceDirectory = s"file://$resourceDir/xhtml1"
   private val referenceDirectory = s"localhost:8000//nightly-unstable/xhtml1"
   private val imageDirectory: String = s"${grinder.Boot.UserDir}/data/screenshot"
+  private val resultDirectory: String = s"${grinder.Boot.UserDir}/data/"
 
   val browserName = args(0)
 
@@ -38,6 +41,7 @@ class CssTest(args: Seq[String]) {
 
     var passes = 0
     var fails = 0
+    var results = Seq[TestResult]()
 
     try {
       driver.manage().window().maximize()
@@ -46,19 +50,21 @@ class CssTest(args: Seq[String]) {
 
       val parser = new TestXmlParser()
       val testCases = parser.parserTests
-      val selectedTests = testCases.drop(2100).take(100)
+      val selectedTests = testCases.drop(2000).take(100)
       val pb = new ProgressBar("Test", selectedTests.length)
       pb.start()
       selectedTests.foreach { test =>
         navAndSnap(test.testHref)
         navAndSnap(test.referenceHref)
         val same = isScreenShotSame(enc(test.testHref), enc(test.referenceHref))
+        results +:= TestResult(test.testHref, same)
         if (same) {
           passes += 1
         } else {
           fails += 1
         }
         pb.step()
+
         if (Pause.isPauseRequested) {
           println(s"\n${Console.BOLD}Paused. Type `C` or `c` to continue, anything else to quit.${Console.RESET}")
           val response = io.StdIn.readLine()
@@ -79,8 +85,25 @@ class CssTest(args: Seq[String]) {
     printStats()
 
     def printStats() = {
+      import rapture.json._
+      import jsonBackends.jawn._
+      import formatters.humanReadable.jsonFormatterImplicit
+
       println("Fails : " + fails)
       println("Passes: " + passes)
+
+      val json = json"""${
+        results.map(r => json""" {
+          "id": ${r.id},
+          "pass": ${r.pass}
+        }""")
+      }"""
+      val fw = new java.io.FileWriter(resultDirectory + "/results.json")
+      try {
+        fw.write(Json.format(json))
+      } finally {
+        fw.close()
+      }
     }
   }
 

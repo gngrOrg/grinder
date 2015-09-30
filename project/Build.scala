@@ -7,7 +7,9 @@ object Build extends Build {
   val appName = "grinder"
 
   val main = Project(appName, file(".")).settings(
-    (testOptions in Test) +=Tests.Argument(TestFrameworks.ScalaTest, "-h", "target/test-reports"),
+
+    // (testOptions in Test) +=Tests.Argument(TestFrameworks.ScalaTest, "-h", "target/test-reports"),
     libraryDependencies ++= dependencies()
   )
 }
+

@@ -64,6 +64,7 @@ class CssTest(args: Seq[String]) {
           fails += 1
         }
         pb.step()
+        pb.setExtraMessage("Fails: " + fails)
 
         if (Pause.isPauseRequested) {
           println(s"\n${Console.BOLD}Paused. Type `C` or `c` to continue, anything else to quit.${Console.RESET}")

@@ -170,12 +170,18 @@ class Grinder(args: Seq[String]) {
       val referenceImage = ImageIO.read(refImageFile)
 
       val isExists = if (hasEqualDimensions(testImage, referenceImage)) {
-        val comparisons = for (
-          w <- 0 until testImage.getWidth;
-          h <- 0 until testImage.getHeight
-        ) yield {
-          val result = testImage.getRGB(w, h) == referenceImage.getRGB(w, h)
-          result
+        scalaxy.streams.optimize {
+          var failures = 0
+          for (
+            w <- 0 until testImage.getWidth;
+            h <- 0 until testImage.getHeight
+          ) {
+            val same = testImage.getRGB(w, h) == referenceImage.getRGB(w, h)
+            if (!same) {
+              failures += 1
+            }
+          }
+          failures < COMPARISION_THRESHOLD
         }
         val count = comparisons.toList.count(_ == false)
         if(count > 0) println(s"************ $count "+testFile.getAbsolutePath+"\n"+refImageFile.getAbsolutePath)

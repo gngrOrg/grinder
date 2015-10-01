@@ -8,6 +8,7 @@ import org.openqa.selenium.OutputType
 import org.openqa.selenium.firefox.FirefoxDriver
 import javax.imageio.ImageIO
 import me.tongfei.progressbar.ProgressBar
+import org.openqa.selenium.Dimension
 
 case class TestResult(id: String, pass: Boolean)
 
@@ -44,7 +45,8 @@ class CssTest(args: Seq[String]) {
     var results = Seq[TestResult]()
 
     try {
-      driver.manage().window().maximize()
+      // driver.manage().window().maximize()
+      driver.manage().window().setSize(new Dimension(800, 800))
 
       driver.manage().timeouts().implicitlyWait(20, TimeUnit.SECONDS)
 

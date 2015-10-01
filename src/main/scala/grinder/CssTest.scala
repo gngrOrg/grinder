@@ -9,6 +9,8 @@ import org.openqa.selenium.firefox.FirefoxDriver
 import javax.imageio.ImageIO
 import me.tongfei.progressbar.ProgressBar
 import org.openqa.selenium.Dimension
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 case class TestResult(id: String, pass: Boolean)
 
@@ -40,9 +42,15 @@ class CssTest(args: Seq[String]) {
   def run() {
     Pause.init()
 
+    val timer = new Timer()
     var passes = 0
     var fails = 0
     var results = Seq[TestResult]()
+    val startDate = LocalDate.now()
+
+    val parser = new TestXmlParser()
+    val testCases = parser.parserTests
+    val selectedTests = testCases // .drop(2000).take(10)
 
     try {
       // driver.manage().window().maximize()
@@ -50,11 +58,9 @@ class CssTest(args: Seq[String]) {
 
       driver.manage().timeouts().implicitlyWait(20, TimeUnit.SECONDS)
 
-      val parser = new TestXmlParser()
-      val testCases = parser.parserTests
-      val selectedTests = testCases.drop(2000).take(100)
       val pb = new ProgressBar("Test", selectedTests.length)
       pb.start()
+      timer.start()
       selectedTests.foreach { test =>
         navAndSnap(test.testHref)
         navAndSnap(test.referenceHref)
@@ -69,9 +75,11 @@ class CssTest(args: Seq[String]) {
         pb.setExtraMessage("Fails: " + fails)
 
         if (Pause.isPauseRequested) {
+          timer.stop()
           println(s"\n${Console.BOLD}Paused. Type `C` or `c` to continue, anything else to quit.${Console.RESET}")
           val response = io.StdIn.readLine()
           if (response.matches("[cC]")) {
+            timer.start()
             Pause.init()
             println("Continuing")
           } else {
@@ -80,6 +88,7 @@ class CssTest(args: Seq[String]) {
           }
         }
       }
+      timer.stop()
       pb.stop()
     } finally {
       driver.quit()
@@ -95,11 +104,22 @@ class CssTest(args: Seq[String]) {
       println("Fails : " + fails)
       println("Passes: " + passes)
 
-      val json = json"""${
-        results.map(r => json""" {
-          "id": ${r.id},
-          "pass": ${r.pass}
-        }""")
+      val json = json"""{
+        "meta" : {
+          "browser"   : $browserName,
+          "startDate" : ${startDate.format(DateTimeFormatter.ISO_LOCAL_DATE)},
+          "timeTaken" : ${timer.getConsumedTime}
+        },
+        "css21-reftests" : {
+          "totalCount" : ${testCases.length},
+          "selectedCount" : ${selectedTests.length},
+          "results": ${
+            results.map(r => json"""{
+              "id": ${r.id},
+              "pass": ${r.pass}
+            }""")
+          }
+        }
       }"""
       val fw = new java.io.FileWriter(resultDirectory + "/results.json")
       try {
@@ -164,4 +184,33 @@ class CssTest(args: Seq[String]) {
     FileUtils.cleanDirectory(new File(imageDirectory))
   }
   */
+}
+
+class Timer {
+  private var consumedTime = 0L
+  private var startTime = 0L
+  private var running = false
+
+  def start() {
+    synchronized {
+      running = true
+      startTime = System.currentTimeMillis()
+    }
+  }
+
+  def stop() {
+    synchronized {
+      consumedTime += System.currentTimeMillis() - startTime
+      running = false
+    }
+  }
+
+  def getConsumedTime:Long = {
+    synchronized {
+      if (running) {
+        throw new IllegalStateException("Time being evaluated while running")
+      }
+      consumedTime
+    }
+  }
 }

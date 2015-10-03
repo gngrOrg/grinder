@@ -147,7 +147,7 @@ class CssTest(args: Seq[String]) {
 
   private def enc(s: String) = java.net.URLEncoder.encode(s, "UTF-8")
 
-  private def takeScreenShot(name: String) = {
+  private def takeScreenShot(name: String) {
     val bytes = driver.getScreenshotAs(OutputType.BYTES)
     val fileName = imageDirectory + "/" + name + ".png"
     val fos = new FileOutputStream(fileName)

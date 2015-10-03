@@ -27,3 +27,11 @@ trait TestException extends Exception {
 class InvalidConfigurationException(cause: String) extends TestException {
   def summary = "Invalid config: " + cause
 }
+
+class InvalidStateException(cause: String) extends TestException {
+  def summary = "Invalid state: " + cause
+}
+
+class QuitRequestedException extends TestException {
+  val summary = "Quitting on request"
+}

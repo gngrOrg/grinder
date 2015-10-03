@@ -8,13 +8,20 @@ import org.openqa.selenium.OutputType
 import org.openqa.selenium.firefox.FirefoxDriver
 import javax.imageio.ImageIO
 import me.tongfei.progressbar.ProgressBar
+import org.openqa.selenium.Dimension
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import org.openqa.selenium.WebDriverException
 
-class CssTest(args:Seq[String]) {
+case class TestResult(id: String, pass: Boolean)
+
+class CssTest(args: Seq[String]) {
   private val COMPARISION_THRESHOLD = 50
   private val resourceDir: String = s"${grinder.Boot.UserDir}/nightly-unstable"
   // private val referenceDirectory = s"file://$resourceDir/xhtml1"
   private val referenceDirectory = s"localhost:8000//nightly-unstable/xhtml1"
   private val imageDirectory: String = s"${grinder.Boot.UserDir}/data/screenshot"
+  private val resultDirectory: String = s"${grinder.Boot.UserDir}/data/"
 
   val browserName = args(0)
 
@@ -34,36 +41,94 @@ class CssTest(args:Seq[String]) {
   }
 
   def run() {
+    Pause.init()
+
+    val timer = new Timer()
     var passes = 0
     var fails = 0
+    var results = Seq[TestResult]()
+    val startDate = LocalDate.now()
+
+    val parser = new TestXmlParser()
+    val testCases = parser.parserTests
+    val selectedTests = testCases // .drop(2000).take(10)
 
     try {
-      driver.manage().window().maximize()
+      // driver.manage().window().maximize()
+      driver.manage().window().setSize(new Dimension(800, 800))
 
       driver.manage().timeouts().implicitlyWait(20, TimeUnit.SECONDS)
 
-      val parser = new TestXmlParser()
-      val testCases = parser.parserTests
-      val selectedTests = testCases.drop(2100).take(100)
       val pb = new ProgressBar("Test", selectedTests.length)
       pb.start()
+      timer.start()
       selectedTests.foreach { test =>
         navAndSnap(test.testHref)
         navAndSnap(test.referenceHref)
         val same = isScreenShotSame(enc(test.testHref), enc(test.referenceHref))
+        results +:= TestResult(test.testHref, same)
         if (same) {
           passes += 1
         } else {
           fails += 1
         }
         pb.step()
+        pb.setExtraMessage("Fails: " + fails)
+
+        if (Pause.isPauseRequested) {
+          timer.stop()
+          println(s"\n${Console.BOLD}Paused. Type `C` or `c` to continue, anything else to quit.${Console.RESET}")
+          val response = io.StdIn.readLine()
+          if (response.matches("[cC]")) {
+            timer.start()
+            Pause.init()
+            println("Continuing")
+          } else {
+            printStats()
+            throw new QuitRequestedException
+          }
+        }
       }
+      timer.stop()
       pb.stop()
     } finally {
-      driver.close()
+      driver.quit()
     }
-    println("Fails : " + fails)
-    println("Passes: " + passes)
+
+    printStats()
+
+    def printStats() = {
+      import rapture.json._
+      import jsonBackends.jawn._
+      import formatters.humanReadable.jsonFormatterImplicit
+
+      println("Fails : " + fails)
+      println("Passes: " + passes)
+
+      val json = json"""{
+        "meta" : {
+          "browser"   : $browserName,
+          "startDate" : ${startDate.format(DateTimeFormatter.ISO_LOCAL_DATE)},
+          "timeTaken" : ${timer.getConsumedTime}
+        },
+        "css21-reftests" : {
+          "totalCount" : ${testCases.length},
+          "selectedCount" : ${selectedTests.length},
+          "results": ${
+            results.map(r => json"""{
+              "id": ${r.id},
+              "pass": ${r.pass}
+            }""")
+          }
+        }
+      }"""
+      val fw = new java.io.FileWriter(resultDirectory + "/results.json")
+      try {
+        fw.write(Json.format(json))
+      } finally {
+        fw.close()
+      }
+    }
   }
 
   private var visited: Set[String] = Set()
@@ -71,14 +136,18 @@ class CssTest(args:Seq[String]) {
   private def navAndSnap(path: String) {
     if (!visited.contains(path)) {
       visited += path
-      navigateToPage(path)
-      takeScreenShot(enc(path))
+      try {
+        navigateToPage(path)
+        takeScreenShot(enc(path))
+      } catch {
+        case wde: WebDriverException => println(s"\nError for $path : ${wde.getMessage}")
+      }
     }
   }
 
   private def enc(s: String) = java.net.URLEncoder.encode(s, "UTF-8")
 
-  private def takeScreenShot(name: String) = {
+  private def takeScreenShot(name: String) {
     val bytes = driver.getScreenshotAs(OutputType.BYTES)
     val fileName = imageDirectory + "/" + name + ".png"
     val fos = new FileOutputStream(fileName)
@@ -91,24 +160,30 @@ class CssTest(args:Seq[String]) {
 
   private def isScreenShotSame(test: String, ref: String): Boolean = {
     val testFile: File = new File(s"$imageDirectory/$test.png")
-    val testImage = ImageIO.read(testFile)
     val refImage: File = new File(s"$imageDirectory/$ref.png")
     val referenceImage = ImageIO.read(refImage)
 
-    val isExists = if (hasEqualDimensions(testImage, referenceImage)) {
-      val comparisons = for (
-        w <- 0 until testImage.getWidth;
-        h <- 0 until testImage.getHeight
-      ) yield {
-        val result = testImage.getRGB(w, h) == referenceImage.getRGB(w, h)
-        result
-      }
-      val count = comparisons.toList.count(_ == false)
-      count < COMPARISION_THRESHOLD
-    } else {
+    if (!(testFile.exists() && refImage.exists())) {
       false
+    } else {
+      val testImage = ImageIO.read(testFile)
+      val referenceImage = ImageIO.read(refImage)
+
+      val isExists = if (hasEqualDimensions(testImage, referenceImage)) {
+        val comparisons = for (
+          w <- 0 until testImage.getWidth;
+          h <- 0 until testImage.getHeight
+        ) yield {
+          val result = testImage.getRGB(w, h) == referenceImage.getRGB(w, h)
+          result
+        }
+        val count = comparisons.toList.count(_ == false)
+        count < COMPARISION_THRESHOLD
+      } else {
+        false
+      }
+      isExists
     }
-    isExists
   }
 
   private def hasEqualDimensions(testImage: BufferedImage, referenceImage: BufferedImage): Boolean = {
@@ -120,4 +195,33 @@ class CssTest(args:Seq[String]) {
     FileUtils.cleanDirectory(new File(imageDirectory))
   }
   */
+}
+
+class Timer {
+  private var consumedTime = 0L
+  private var startTime = 0L
+  private var running = false
+
+  def start() {
+    synchronized {
+      running = true
+      startTime = System.currentTimeMillis()
+    }
+  }
+
+  def stop() {
+    synchronized {
+      consumedTime += System.currentTimeMillis() - startTime
+      running = false
+    }
+  }
+
+  def getConsumedTime:Long = {
+    synchronized {
+      if (running) {
+        throw new IllegalStateException("Time being evaluated while running")
+      }
+      consumedTime
+    }
+  }
 }

@@ -9,7 +9,9 @@ object Build extends Build {
   val main = Project(appName, file(".")).settings(
 
     // (testOptions in Test) +=Tests.Argument(TestFrameworks.ScalaTest, "-h", "target/test-reports"),
-    libraryDependencies ++= dependencies()
+    resolvers += Resolver.sonatypeRepo("releases"),
+    libraryDependencies ++= dependencies(),
+    scalacOptions ++= Seq("-optimise", "-Yclosure-elim", "-Yinline")
   )
 }
 

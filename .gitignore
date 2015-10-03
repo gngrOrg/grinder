@@ -8,5 +8,6 @@ target
 /.cache-tests
 /.classpath
 /.project
-/.settings/org.eclipse.core.resources.prefs
+/.settings/
 /bin
+/pause

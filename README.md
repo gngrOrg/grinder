@@ -38,8 +38,16 @@ sbt run compare <browser-name> <auth-key-for-gngr>
 
 where `browser-name` can be either `firefox` or `gngr`.
 
+This will open a new browser window, navigate to the tests and their references, screenshot them and compare the images.
+
 When running with `gngr`, you need to set it up first:
    * Start `gngr` with the `-grinder-key=xyz` flag (substitute `xyz` with any key of your choice).
    * Provide the same key to the grinder run. For example: `sbt run compare gngr xyz`
 
-This will open a new browser window, navigate to the tests and their references, screenshot them and compare the images.
+## Pausing the tests
+
+```
+touch pause
+```
+
+in this repo root will cause tests to pause.

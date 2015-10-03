@@ -45,6 +45,9 @@ import javax.imageio.ImageIO
 import java.io.ByteArrayOutputStream
 import java.io.PipedInputStream
 import java.io.PipedOutputStream
+import java.security.MessageDigest
+import java.util.Base64
+import org.openqa.selenium.Dimension
 
 class GngrDriver(authKey: String) extends WebDriver with TakesScreenshot {
   private val gngrWindow = new Window {
@@ -53,8 +56,11 @@ class GngrDriver(authKey: String) extends WebDriver with TakesScreenshot {
     def maximize() {
 
     }
+
     def setPosition(x$1: org.openqa.selenium.Point): Unit = ???
-    def setSize(x$1: org.openqa.selenium.Dimension): Unit = ???
+    def setSize(dim: Dimension) {
+      execute(grinderPort, s"SET_SIZE ${dim.getWidth} ${dim.getHeight}")
+    }
   }
 
   private val gngrTimeouts = new Timeouts {
@@ -95,12 +101,14 @@ class GngrDriver(authKey: String) extends WebDriver with TakesScreenshot {
 
   private def getGrinderPort: Int = {
     execute(getGngrPort, (writer, is) => {
-      writer.write(s"GRINDER $authKey\r\n")
+      val digest = MessageDigest.getInstance("SHA-256");
+      val authKeyHash = digest.digest(authKey.getBytes("UTF-8"));
+      val authKeyHashB64 = Base64.getEncoder.encodeToString(authKeyHash)
+      writer.write(s"GRINDER $authKeyHashB64\r\n")
       writer.flush()
       val dis = new DataInputStream(is)
       val gsPort = dis.readInt()
-      writer.write("ACK\r\n")
-      writer.flush()
+      sendAck(writer)
       if (gsPort < 0) {
         throw new InvalidConfigurationException("Auth key rejected")
       }
@@ -115,11 +123,15 @@ class GngrDriver(authKey: String) extends WebDriver with TakesScreenshot {
     s
   }
 
-  private def execute(port: Int, command: String) {
+  private def execute(port: Int, command: String, ack: Boolean = true) {
     // println(s"Executing $command on $port")
     execute(port, (writer, is) => {
       writer.write(command + "\r\n")
       writer.flush()
+
+      if (ack) {
+        getConfirmationAndSendAck(is, writer)
+      }
     })
   }
 
@@ -133,7 +145,7 @@ class GngrDriver(authKey: String) extends WebDriver with TakesScreenshot {
   }
 
   def close() {
-    execute(grinderPort, "CLOSE")
+    execute(grinderPort, "CLOSE", ack = false)
   }
 
   def findElement(x$1: org.openqa.selenium.By): org.openqa.selenium.WebElement = ???
@@ -159,9 +171,7 @@ class GngrDriver(authKey: String) extends WebDriver with TakesScreenshot {
       execute(grinderPort, (writer, is) => {
         writer.write("TO " + us + "\r\n")
         writer.flush()
-        (new DataInputStream(is)).readInt()
-        writer.write("ACK\r\n")
-        writer.flush()
+        getConfirmationAndSendAck(is, writer)
       })
     }
 
@@ -169,7 +179,11 @@ class GngrDriver(authKey: String) extends WebDriver with TakesScreenshot {
 
   def navigate(): Navigation = gngrNavigation
 
-  def quit(): Unit = ???
+  def quit(): Unit = {
+    // TODO: Quit should also delete the profile (when profiles are implemented)
+    close()
+  }
+
   def switchTo(): org.openqa.selenium.WebDriver.TargetLocator = ???
 
   def getScreenshotAs[T](ot: OutputType[T]): T = {
@@ -180,13 +194,22 @@ class GngrDriver(authKey: String) extends WebDriver with TakesScreenshot {
           writer.flush()
           val fileSize = (new DataInputStream(is)).readInt()
           val bytes = readInputStream(is, fileSize)
-          writer.write("ACK\r\n")
-          writer.flush()
+          sendAck(writer)
 
           bytes
         })
         ot.convertFromPngBytes(bytes)
     }
+  }
+
+  private def sendAck(writer: java.io.OutputStreamWriter) = {
+    writer.write("ACK\r\n")
+    writer.flush()
+  }
+
+  private def getConfirmationAndSendAck(is: java.io.InputStream, writer: java.io.OutputStreamWriter) = {
+    (new DataInputStream(is)).readInt()
+    sendAck(writer)
   }
 
   private def readInputStream(is: InputStream, maxSize: Int) = {

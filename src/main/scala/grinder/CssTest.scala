@@ -11,6 +11,7 @@ import me.tongfei.progressbar.ProgressBar
 import org.openqa.selenium.Dimension
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import org.openqa.selenium.WebDriverException
 
 case class TestResult(id: String, pass: Boolean)
 
@@ -135,8 +136,12 @@ class CssTest(args: Seq[String]) {
   private def navAndSnap(path: String) {
     if (!visited.contains(path)) {
       visited += path
-      navigateToPage(path)
-      takeScreenShot(enc(path))
+      try {
+        navigateToPage(path)
+        takeScreenShot(enc(path))
+      } catch {
+        case wde: WebDriverException => println(s"\nError for $path : ${wde.getMessage}")
+      }
     }
   }
 
@@ -155,24 +160,30 @@ class CssTest(args: Seq[String]) {
 
   private def isScreenShotSame(test: String, ref: String): Boolean = {
     val testFile: File = new File(s"$imageDirectory/$test.png")
-    val testImage = ImageIO.read(testFile)
     val refImage: File = new File(s"$imageDirectory/$ref.png")
     val referenceImage = ImageIO.read(refImage)
 
-    val isExists = if (hasEqualDimensions(testImage, referenceImage)) {
-      val comparisons = for (
-        w <- 0 until testImage.getWidth;
-        h <- 0 until testImage.getHeight
-      ) yield {
-        val result = testImage.getRGB(w, h) == referenceImage.getRGB(w, h)
-        result
-      }
-      val count = comparisons.toList.count(_ == false)
-      count < COMPARISION_THRESHOLD
-    } else {
+    if (!(testFile.exists() && refImage.exists())) {
       false
+    } else {
+      val testImage = ImageIO.read(testFile)
+      val referenceImage = ImageIO.read(refImage)
+
+      val isExists = if (hasEqualDimensions(testImage, referenceImage)) {
+        val comparisons = for (
+          w <- 0 until testImage.getWidth;
+          h <- 0 until testImage.getHeight
+        ) yield {
+          val result = testImage.getRGB(w, h) == referenceImage.getRGB(w, h)
+          result
+        }
+        val count = comparisons.toList.count(_ == false)
+        count < COMPARISION_THRESHOLD
+      } else {
+        false
+      }
+      isExists
     }
-    isExists
   }
 
   private def hasEqualDimensions(testImage: BufferedImage, referenceImage: BufferedImage): Boolean = {

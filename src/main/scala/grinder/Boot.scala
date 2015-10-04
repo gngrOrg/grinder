@@ -36,7 +36,7 @@ object Boot extends App {
 
   def compare() {
     if (args.length > 1) {
-      val cssTest = new CssTest(args.tail)
+      val cssTest = new Grinder(args.tail)
       cssTest.run()
       println("Run finished!")
     } else {

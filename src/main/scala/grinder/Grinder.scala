@@ -16,7 +16,6 @@ import org.openqa.selenium.WebDriverException
 case class TestResult(id: String, pass: Boolean)
 
 class Grinder(args: Seq[String]) {
-  private val COMPARISION_THRESHOLD = 50
   private val resourceDir: String = s"${grinder.Boot.UserDir}/nightly-unstable"
   // private val referenceDirectory = s"file://$resourceDir/xhtml1"
   private val referenceDirectory = s"localhost:8000//nightly-unstable/xhtml1"
@@ -67,7 +66,7 @@ class Grinder(args: Seq[String]) {
         val refHref = new File(s"$imageDirectory/${enc(test.referenceHref)}.png")
         navAndSnap(test.testHref)
         navAndSnap(test.referenceHref)
-        val same = isScreenShotSame(testHref,refHref)
+        val same = GrinderUtil.isScreenShotSame(testHref,refHref)
         results +:= TestResult(test.testHref, same)
         if (same) {
           passes += 1
@@ -160,40 +159,6 @@ class Grinder(args: Seq[String]) {
     }
   }
 
-  def isScreenShotSame(testFile:File, refImageFile:File): Boolean = {
-    val referenceImage = ImageIO.read(refImageFile)
-
-    if (!(testFile.exists() && refImageFile.exists())) {
-      false
-    } else {
-      val testImage = ImageIO.read(testFile)
-      val referenceImage = ImageIO.read(refImageFile)
-
-      val isExists = if (hasEqualDimensions(testImage, referenceImage)) {
-        scalaxy.streams.optimize {
-          var failures = 0
-          for (
-            w <- 0 until testImage.getWidth;
-            h <- 0 until testImage.getHeight
-          ) {
-            val same = testImage.getRGB(w, h) == referenceImage.getRGB(w, h)
-            if (!same) {
-              failures += 1
-            }
-          }
-          failures < COMPARISION_THRESHOLD
-        }
-      } else {
-        false
-      }
-      isExists
-    }
-  }
-
-  private def hasEqualDimensions(testImage: BufferedImage, referenceImage: BufferedImage): Boolean = {
-    testImage.getWidth == referenceImage.getWidth && testImage.getHeight == referenceImage.getHeight
-  }
-
   /*
   override def afterEach() = {
     FileUtils.cleanDirectory(new File(imageDirectory))
@@ -228,4 +193,43 @@ class Timer {
       consumedTime
     }
   }
+}
+
+object GrinderUtil {
+  private val COMPARISION_THRESHOLD = 50
+
+  def isScreenShotSame(testFile:File, refImageFile:File): Boolean = {
+    val referenceImage = ImageIO.read(refImageFile)
+
+    if (!(testFile.exists() && refImageFile.exists())) {
+      false
+    } else {
+      val testImage = ImageIO.read(testFile)
+      val referenceImage = ImageIO.read(refImageFile)
+
+      val isExists = if (hasEqualDimensions(testImage, referenceImage)) {
+        scalaxy.streams.optimize {
+          var failures = 0
+          for (
+            w <- 0 until testImage.getWidth;
+            h <- 0 until testImage.getHeight
+          ) {
+            val same = testImage.getRGB(w, h) == referenceImage.getRGB(w, h)
+            if (!same) {
+              failures += 1
+            }
+          }
+          failures < COMPARISION_THRESHOLD
+        }
+      } else {
+        false
+      }
+      isExists
+    }
+  }
+
+  private def hasEqualDimensions(testImage: BufferedImage, referenceImage: BufferedImage): Boolean = {
+    testImage.getWidth == referenceImage.getWidth && testImage.getHeight == referenceImage.getHeight
+  }
+
 }

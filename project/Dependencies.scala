@@ -3,6 +3,7 @@ import sbt._
 object Dependencies {
   def dependencies() = {
     Seq(
+      "com.nativelibs4java" %% "scalaxy-streams" % "0.3.4" % "provided",
       "org.spire-math" %% "jawn-ast" % "0.8.3",
       "com.propensive" %% "rapture-json" % "2.0.0-M1",
       "com.propensive" %% "rapture-json-jawn" % "2.0.0-M1",

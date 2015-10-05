@@ -184,7 +184,6 @@ class Grinder(args: Seq[String]) {
           failures < COMPARISION_THRESHOLD
         }
         val count = comparisons.toList.count(_ == false)
-        if(count > 0) println(s"************ $count "+testFile.getAbsolutePath+"\n"+refImageFile.getAbsolutePath)
         count < COMPARISION_THRESHOLD
       } else {
         false

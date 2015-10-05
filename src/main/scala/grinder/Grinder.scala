@@ -15,7 +15,7 @@ import org.openqa.selenium.WebDriverException
 
 case class TestResult(id: String, pass: Boolean)
 
-class CssTest(args: Seq[String]) {
+class Grinder(args: Seq[String]) {
   private val COMPARISION_THRESHOLD = 50
   private val resourceDir: String = s"${grinder.Boot.UserDir}/nightly-unstable"
   // private val referenceDirectory = s"file://$resourceDir/xhtml1"
@@ -25,7 +25,7 @@ class CssTest(args: Seq[String]) {
 
   val browserName = args(0)
 
-  private val driver = browserName match {
+  val driver = browserName match {
     case "gngr" => {
       if (args.length > 1) {
         new GngrDriver(args(1))
@@ -63,9 +63,11 @@ class CssTest(args: Seq[String]) {
       pb.start()
       timer.start()
       selectedTests.foreach { test =>
+        val testHref  = new File(s"$imageDirectory/${enc(test.testHref)}.png")
+        val refHref = new File(s"$imageDirectory/${enc(test.referenceHref)}.png")
         navAndSnap(test.testHref)
         navAndSnap(test.referenceHref)
-        val same = isScreenShotSame(enc(test.testHref), enc(test.referenceHref))
+        val same = isScreenShotSame(testHref,refHref)
         results +:= TestResult(test.testHref, same)
         if (same) {
           passes += 1
@@ -158,16 +160,14 @@ class CssTest(args: Seq[String]) {
     }
   }
 
-  private def isScreenShotSame(test: String, ref: String): Boolean = {
-    val testFile: File = new File(s"$imageDirectory/$test.png")
-    val refImage: File = new File(s"$imageDirectory/$ref.png")
-    val referenceImage = ImageIO.read(refImage)
+  def isScreenShotSame(testFile:File, refImageFile:File): Boolean = {
+    val referenceImage = ImageIO.read(refImageFile)
 
-    if (!(testFile.exists() && refImage.exists())) {
+    if (!(testFile.exists() && refImageFile.exists())) {
       false
     } else {
       val testImage = ImageIO.read(testFile)
-      val referenceImage = ImageIO.read(refImage)
+      val referenceImage = ImageIO.read(refImageFile)
 
       val isExists = if (hasEqualDimensions(testImage, referenceImage)) {
         val comparisons = for (
@@ -178,6 +178,7 @@ class CssTest(args: Seq[String]) {
           result
         }
         val count = comparisons.toList.count(_ == false)
+        if(count > 0) println(s"************ $count "+testFile.getAbsolutePath+"\n"+refImageFile.getAbsolutePath)
         count < COMPARISION_THRESHOLD
       } else {
         false

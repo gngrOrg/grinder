@@ -24,7 +24,7 @@ class Grinder(args: Seq[String]) {
 
   val browserName = args(0)
 
-  val driver = browserName match {
+  lazy val driver = browserName match {
     case "gngr" => {
       if (args.length > 1) {
         new GngrDriver(args(1))

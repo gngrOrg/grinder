@@ -12,6 +12,7 @@ import org.openqa.selenium.Dimension
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import org.openqa.selenium.WebDriverException
+import java.nio.file.FileSystems
 
 case class TestResult(id: String, pass: Boolean)
 
@@ -40,6 +41,9 @@ class Grinder(args: Seq[String]) {
   }
 
   def run() {
+    val imageDirectoryPath = FileSystems.getDefault().getPath(imageDirectory)
+    java.nio.file.Files.createDirectories(imageDirectoryPath)
+
     Pause.init()
 
     val timer = new Timer()

@@ -1,5 +1,5 @@
 sudo: false
 language: scala
 jdk: oraclejdk8
-script: "scala test"
+script: "sbt test"
 

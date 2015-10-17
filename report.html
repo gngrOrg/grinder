@@ -1,0 +1,156 @@
+<html>
+<style>
+h1, h2, h3 {
+  color: #555;
+}
+
+h1 { font-size: 1.3em; border-bottom: 1px solid grey; display: inline-block; margin-right: 1em;}
+form { display: inline-block}
+
+.list {
+  height: 10em;
+  overflow: auto;
+  display: inline-block;
+  vertical-align: top;
+  border:1px solid blue;
+  padding:.3em;
+}
+
+.list h3 {padding: 0; margin: 0}
+
+.list li {
+  cursor: pointer;
+}
+
+.list li:hover {
+  background: lightgrey;
+}
+
+#details {
+  margin: .3em 0;
+  border: 1px solid grey;
+  padding: .3em;
+}
+
+#details img {
+  border: 1px dotted lightgrey;
+  width: 49%;
+  margin: 1px;
+}
+
+</style>
+<script>
+function getData(type, url, callback) {
+  var xhr = new XMLHttpRequest();
+  xhr.addEventListener("load", function() {
+    callback(xhr);
+  });
+  xhr.responseType = type;
+  xhr.open("GET", url);
+  xhr.send();
+}
+</script>
+
+<script>
+  function formSubmitted(f) {
+    var path1 = f.path1.value;
+    var path2 = f.path2.value;
+    getData("json", path1 + "/results.json", function(data1) {
+      getData("json", path2 + "/results.json", function(data2) {
+        getData("document", path1 + "/test-cases.xml", function(data3) {
+          report(path1, path2, data1.response, data2.response, data3.responseXML);
+        });
+      });
+    });
+
+    return false;
+  }
+
+  function findTestInfo(id, testInfo) {
+    var t = testInfo.querySelector("test[id='"+id+"']");
+    return {
+      href: t.querySelector("test-href").innerHTML,
+      refHref: t.querySelector("reference-href").innerHTML
+    };
+  }
+
+  function safeEncode(str) {
+    return encodeURIComponent(encodeURIComponent(str));
+  }
+
+  function mkScreenshot(i) {
+    return `<a title=${i.path + i.href} href=${"nightly-unstable/xhtml1/" + i.href}><img src=${i.path + "/screenshot/" + safeEncode(i.href) + ".png"} /></a>`;
+  }
+
+  function showDetails(imgs) {
+    var d = imgs.map(img => mkScreenshot(img)).join("");
+    document.getElementById("details").innerHTML = d;
+  }
+
+  function report(path1, path2, data, baseline, testInfo) {
+    var dataRes = data["css21-reftests"].results;
+    var baseRes = baseline["css21-reftests"].results;
+    dataRes.forEach(function(dr) {
+      var info = findTestInfo(dr.id, testInfo);
+
+      var e = document.createElement("li");
+      e.innerHTML = dr.id;
+      e.onclick = () => showDetails([
+        {path: path1, href: info.href},
+        {path: path1, href: info.refHref}
+      ]);
+
+      document.getElementById(dr.pass == "true" ? "passes" : "fails").appendChild(e);
+
+      var br = baseline["css21-reftests"].results.find((b) => b.id == dr.id);
+      if (br) {
+        if (br.pass != dr.pass) {
+          var e2 = document.createElement("li");
+          e2.innerHTML = dr.id;
+          e2.onclick = () => showDetails([
+            {path: path1, href: info.href},
+            {path: path1, href: info.refHref},
+            {path: path2, href: info.href},
+            {path: path2, href: info.refHref}
+          ]);
+          document.getElementById(br.pass == "true" ? "regressions" : "progressions").appendChild(e2);
+        }
+      }
+    });
+  }
+</script>
+
+<body>
+<div>
+<h1>Grinder reports</h1>
+<form onsubmit="return formSubmitted(this);">
+  <input type="text" name="path1" value="data/"/>
+  <input type="text" name="path2" value="/grinderBaselines/gngr/">
+  <input type="submit" />
+</form>
+</div>
+
+<div class="list">
+ <h3>Regressions</h3>
+ <ol id="regressions"> </ol>
+</div>
+
+<div class="list">
+ <h3>Fails</h3>
+ <ol id="fails"> </ol>
+</div>
+
+<div class="list">
+ <h3>Progressions</h3>
+ <ol id="progressions"> </ol>
+</div>
+
+<div class="list">
+ <h3>Passes</h3>
+ <ol id="passes"> </ol>
+</div>
+
+<div id="details"> </div>
+
+</body>
+</html>

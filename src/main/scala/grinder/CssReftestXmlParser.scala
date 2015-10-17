@@ -30,7 +30,7 @@ class CssReftestXmlParser {
 
     val testCaseXml = <tests>
       {testCases.map(testCase => {
-        <test>
+        <test id={testCase.testHref}>
           <test-title>{testCase.testTitle}</test-title>
           <test-href>{testCase.testHref}</test-href>
           <reference-value>{testCase.refrenceValue}</reference-value>

@@ -82,7 +82,8 @@ class Grinder(args: Seq[String]) {
 
         if (Pause.isPauseRequested) {
           timer.stop()
-          println(s"\n${Console.BOLD}Paused. Type `C` or `c` to continue, anything else to quit.${Console.RESET}")
+          printStats()
+          println(s"\n${Console.BOLD}Paused, stats written. Type `C` or `c` to continue, anything else to quit.${Console.RESET}")
           val response = io.StdIn.readLine()
           if (response.matches("[cC]")) {
             timer.start()

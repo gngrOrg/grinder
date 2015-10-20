@@ -66,11 +66,11 @@ class Grinder(args: Seq[String]) {
       pb.start()
       timer.start()
       selectedTests.foreach { test =>
-        val testHref  = new File(s"$imageDirectory/${enc(test.testHref)}.png")
+        val testHref = new File(s"$imageDirectory/${enc(test.testHref)}.png")
         val refHref = new File(s"$imageDirectory/${enc(test.referenceHref)}.png")
         navAndSnap(test.testHref)
         navAndSnap(test.referenceHref)
-        val same = GrinderUtil.isScreenShotSame(testHref,refHref)
+        val same = GrinderUtil.isScreenShotSame(testHref, refHref)
         results +:= TestResult(test.testHref, same)
         if (same) {
           passes += 1
@@ -189,7 +189,7 @@ class Timer {
     }
   }
 
-  def getConsumedTime:Long = {
+  def getConsumedTime: Long = {
     synchronized {
       if (running) {
         throw new IllegalStateException("Time being evaluated while running")
@@ -202,7 +202,7 @@ class Timer {
 object GrinderUtil {
   private val COMPARISION_THRESHOLD = 50
 
-  def isScreenShotSame(testFile:File, refImageFile:File): Boolean = {
+  def isScreenShotSame(testFile: File, refImageFile: File): Boolean = {
     val referenceImage = ImageIO.read(refImageFile)
 
     if (!(testFile.exists() && refImageFile.exists())) {

@@ -20,6 +20,7 @@ object Boot extends App {
     command match {
       case "prepare" => prepare()
       case "compare" => compare()
+      case "updateBase" => UpdateBaseLine.update(args.tail)
     }
   } catch {
     case te: TestException => println(te.summary)

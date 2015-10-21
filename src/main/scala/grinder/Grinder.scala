@@ -201,7 +201,8 @@ class Timer {
 }
 
 object GrinderUtil {
-  private val COMPARISION_THRESHOLD = 50
+  private val FAILURE_THRESHOLD = 50
+  private val COMPARISION_THRESHOLD = 10
 
   def isScreenShotSame(testFile: File, refImageFile: File): Boolean = {
     val referenceImage = ImageIO.read(refImageFile)
@@ -218,10 +219,10 @@ object GrinderUtil {
           var h = 0
           val width = testImage.getWidth
           val height = testImage.getHeight
-          while (h < height && failures < COMPARISION_THRESHOLD) {
+          while (h < height && failures < FAILURE_THRESHOLD) {
             var w = 0
-            while (w < width && failures < COMPARISION_THRESHOLD) {
-              val same = testImage.getRGB(w, h) == referenceImage.getRGB(w, h)
+            while (w < width && failures < FAILURE_THRESHOLD) {
+              val same = isPixelSimilar(testImage.getRGB(w, h), referenceImage.getRGB(w, h))
               if (!same) {
                 failures += 1
               }
@@ -229,13 +230,34 @@ object GrinderUtil {
             }
             h += 1
           }
-          failures < COMPARISION_THRESHOLD
+          failures < FAILURE_THRESHOLD
         }
       } else {
         false
       }
       isExists
     }
+  }
+
+  private def isPixelSimilar(p1: Int, p2: Int): Boolean = {
+    if (p1 == p2) {
+      true
+    } else {
+      val r1 = (p1 >> 24) & 0xff;
+      val g1 = (p1 >> 16) & 0xff;
+      val b1 = (p1 >> 8) & 0xff;
+      val a1 = (p1) & 0xff;
+
+      val r2 = (p2 >> 24) & 0xff;
+      val g2 = (p2 >> 16) & 0xff;
+      val b2 = (p2 >> 8) & 0xff;
+      val a2 = (p2) & 0xff;
+      similar(r1, r2) && similar(g1, g2) && similar(b1, b2) && similar(a1, a2)
+    }
+  }
+
+  private def similar(i1:Int, i2:Int): Boolean = {
+    Math.abs(i1 - i2) < COMPARISION_THRESHOLD
   }
 
   private def hasEqualDimensions(testImage: BufferedImage, referenceImage: BufferedImage): Boolean = {

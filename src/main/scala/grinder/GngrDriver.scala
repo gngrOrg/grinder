@@ -181,7 +181,7 @@ class GngrDriver(authKey: String) extends WebDriver with TakesScreenshot {
 
   def quit(): Unit = {
     // TODO: Quit should also delete the profile (when profiles are implemented)
-    close()
+    execute(grinderPort, "QUIT", ack = false)
   }
 
   def switchTo(): org.openqa.selenium.WebDriver.TargetLocator = ???

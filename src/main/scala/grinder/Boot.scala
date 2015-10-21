@@ -1,6 +1,7 @@
 package grinder
 
 import java.io.File
+import java.nio.file._
 
 object Boot extends App {
   lazy val UserDir = {
@@ -33,7 +34,14 @@ object Boot extends App {
 
     println(xmlFile.getAbsolutePath)
 
-    parser.parse(xmlFile)
+    val testCaseXml = parser.parse(xmlFile)
+
+    val dataDirStr = grinder.Boot.UserDir + "/data/"
+    val dataDirPath = FileSystems.getDefault().getPath(dataDirStr)
+    java.nio.file.Files.createDirectories(dataDirPath)
+
+    XmlUtils.saveXmlFile("test-cases",testCaseXml.toString(), dataDirStr)
+
   }
 
   def compare() {

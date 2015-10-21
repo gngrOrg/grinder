@@ -48,8 +48,7 @@ class CssReftestXmlParser {
       })}
     </tests>
 
-    XmlUtils.saveXmlFile("test-cases",testCaseXml.toString(), grinder.Boot.UserDir + "/data/")
-
+    testCaseXml
   }
 
   def hasUnsupportedFlag: (TestCase) => Boolean = {

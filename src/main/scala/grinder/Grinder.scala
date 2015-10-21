@@ -54,7 +54,7 @@ class Grinder(args: Seq[String]) {
 
     val parser = new TestXmlParser()
     val testCases = parser.parserTests
-    val selectedTests = testCases // .drop(2000).take(10)
+    val selectedTests = testCases // .filter(_.testHref contains "blocks-") // .drop(2000).take(10)
 
     try {
       // driver.manage().window().maximize()
@@ -169,35 +169,6 @@ class Grinder(args: Seq[String]) {
     FileUtils.cleanDirectory(new File(imageDirectory))
   }
   */
-}
-
-class Timer {
-  private var consumedTime = 0L
-  private var startTime = 0L
-  private var running = false
-
-  def start() {
-    synchronized {
-      running = true
-      startTime = System.currentTimeMillis()
-    }
-  }
-
-  def stop() {
-    synchronized {
-      consumedTime += System.currentTimeMillis() - startTime
-      running = false
-    }
-  }
-
-  def getConsumedTime: Long = {
-    synchronized {
-      if (running) {
-        throw new IllegalStateException("Time being evaluated while running")
-      }
-      consumedTime
-    }
-  }
 }
 
 object GrinderUtil {

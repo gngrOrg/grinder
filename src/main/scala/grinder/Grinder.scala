@@ -16,7 +16,6 @@ case class TestResult(id: String, pass: Boolean)
 
 class Grinder(args: Seq[String]) {
   private val resourceDir: String = s"${grinder.Boot.UserDir}/nightly-unstable"
-  // private val referenceDirectory = s"file://$resourceDir/xhtml1"
   private val referenceDirectory = s"localhost:8000//nightly-unstable/xhtml1"
   private val imageDirectory: String = s"${grinder.Boot.UserDir}/data/screenshot"
   private val resultDirectory: String = s"${grinder.Boot.UserDir}/data/"
@@ -161,10 +160,4 @@ class Grinder(args: Seq[String]) {
       fos.close()
     }
   }
-
-  /*
-  override def afterEach() = {
-    FileUtils.cleanDirectory(new File(imageDirectory))
-  }
-  */
 }

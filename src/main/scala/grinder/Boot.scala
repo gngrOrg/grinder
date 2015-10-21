@@ -21,6 +21,7 @@ object Boot extends App {
       case "prepare" => prepare()
       case "compare" => compare()
       case "updateBase" => UpdateBaseLine.update(args.tail)
+      case "checkBase" => CheckBaseLine.check(args.tail)
     }
   } catch {
     case te: TestException => println(te.summary)

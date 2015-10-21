@@ -53,11 +53,15 @@ function getData(type, url, callback) {
 
 <script>
   function formSubmitted(f) {
+    NodeList.prototype.forEach = Array.prototype.forEach; 
+    document.querySelectorAll(".list ol").forEach((e) => e.innerHTML = "Loading...");
+
     var path1 = f.path1.value;
     var path2 = f.path2.value;
     getData("json", path1 + "/results.json", function(data1) {
       getData("json", path2 + "/results.json", function(data2) {
         getData("document", path1 + "/test-cases.xml", function(data3) {
+          document.querySelectorAll(".list ol").forEach((e) => e.innerHTML = "");
           report(path1, path2, data1.response, data2.response, data3.responseXML);
         });
       });

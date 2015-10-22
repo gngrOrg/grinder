@@ -32,7 +32,7 @@ class Grinder(args: Seq[String]) {
       }
     }
     case "firefox" => new FirefoxDriver()
-    case "headless" => HeadlessDriver.driver
+    case "headless" => new HeadlessDriver().getDriverInstance
   }
 
   private def navigateToPage(link: String) {

@@ -6,9 +6,9 @@ import org.openqa.selenium.{OutputType, WebDriver}
 import org.openqa.selenium.phantomjs.{PhantomJSDriverService, PhantomJSDriver}
 import org.openqa.selenium.remote.DesiredCapabilities
 
-object HeadlessDriver {
+class HeadlessDriver {
 
-  def driver = new PhantomJSDriver(config());
+  def getDriverInstance = new PhantomJSDriver(config());
 
   private def config() = {
     val caps =new DesiredCapabilities()

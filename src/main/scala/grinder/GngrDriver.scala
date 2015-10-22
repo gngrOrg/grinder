@@ -100,9 +100,10 @@ class GngrDriver(authKey: String) extends WebDriver with TakesScreenshot {
   }
 
   private def getGrinderPort: Int = {
-    execute(getGngrPort, (writer, is) => {
+    val gngrPort = getGngrPort
+    execute(gngrPort, (writer, is) => {
       val digest = MessageDigest.getInstance("SHA-256");
-      val authKeyHash = digest.digest(authKey.getBytes("UTF-8"));
+      val authKeyHash = digest.digest((authKey + gngrPort.toString).getBytes("UTF-8"));
       val authKeyHashB64 = Base64.getEncoder.encodeToString(authKeyHash)
       writer.write(s"GRINDER $authKeyHashB64\r\n")
       writer.flush()
@@ -181,7 +182,7 @@ class GngrDriver(authKey: String) extends WebDriver with TakesScreenshot {
 
   def quit(): Unit = {
     // TODO: Quit should also delete the profile (when profiles are implemented)
-    close()
+    execute(grinderPort, "QUIT", ack = false)
   }
 
   def switchTo(): org.openqa.selenium.WebDriver.TargetLocator = ???

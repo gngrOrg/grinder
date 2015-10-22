@@ -1,12 +1,10 @@
 package grinder
 
-import java.awt.image.BufferedImage
 import java.io.File
 import java.io.FileOutputStream
 import java.util.concurrent.TimeUnit
 import org.openqa.selenium.OutputType
 import org.openqa.selenium.firefox.FirefoxDriver
-import javax.imageio.ImageIO
 import me.tongfei.progressbar.ProgressBar
 import org.openqa.selenium.Dimension
 import java.time.LocalDate
@@ -18,7 +16,6 @@ case class TestResult(id: String, pass: Boolean)
 
 class Grinder(args: Seq[String]) {
   private val resourceDir: String = s"${grinder.Boot.UserDir}/nightly-unstable"
-  // private val referenceDirectory = s"file://$resourceDir/xhtml1"
   private val referenceDirectory = s"localhost:8000//nightly-unstable/xhtml1"
   private val imageDirectory: String = s"${grinder.Boot.UserDir}/data/screenshot"
   private val resultDirectory: String = s"${grinder.Boot.UserDir}/data/"
@@ -54,7 +51,7 @@ class Grinder(args: Seq[String]) {
 
     val parser = new TestXmlParser()
     val testCases = parser.parserTests
-    val selectedTests = testCases // .drop(2000).take(10)
+    val selectedTests = testCases // .filter(_.testHref contains "blocks-") // .drop(2000).take(10)
 
     try {
       // driver.manage().window().maximize()
@@ -163,6 +160,7 @@ class Grinder(args: Seq[String]) {
       fos.close()
     }
   }
+<<<<<<< HEAD
 
 <<<<<<< HEAD
   def isScreenShotSame(testFile:File, refImageFile:File): Boolean = {
@@ -280,3 +278,6 @@ object GrinderUtil {
   }
 
 }
+=======
+}
+>>>>>>> 2fafd822d777277c32fbfb664f27ad912b76b7ee

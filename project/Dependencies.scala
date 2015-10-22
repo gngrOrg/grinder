@@ -10,7 +10,8 @@ object Dependencies {
       "org.seleniumhq.selenium" % "selenium-java" % "2.48.2",
       "me.tongfei" % "progressbar_2.11" % "0.3.2",
       "org.scalatest" % "scalatest_2.11" % "2.2.5",
-      "org.scala-lang.modules" %% "scala-xml" % "1.0.5"
+      "org.scala-lang.modules" %% "scala-xml" % "1.0.5",
+      "com.codeborne" % "phantomjsdriver" % "1.2.1"
     )
   }
 }

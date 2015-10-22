@@ -1,16 +1,17 @@
 package grinder
 
-import java.io.File
-import java.io.FileOutputStream
-import java.util.concurrent.TimeUnit
-import org.openqa.selenium.OutputType
-import org.openqa.selenium.firefox.FirefoxDriver
-import me.tongfei.progressbar.ProgressBar
-import org.openqa.selenium.Dimension
+import java.io.{File, FileOutputStream}
+import java.nio.file.FileSystems
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import org.openqa.selenium.WebDriverException
-import java.nio.file.FileSystems
+import java.util.concurrent.TimeUnit
+
+import me.tongfei.progressbar.ProgressBar
+import org.openqa.selenium.firefox.FirefoxDriver
+import org.openqa.selenium.{Dimension, OutputType, WebDriverException}
+import utils.HeadlessDriver
+
+import scala.concurrent._
 
 case class TestResult(id: String, pass: Boolean)
 
@@ -31,10 +32,11 @@ class Grinder(args: Seq[String]) {
       }
     }
     case "firefox" => new FirefoxDriver()
+    case "headless" => HeadlessDriver.driver
   }
 
   private def navigateToPage(link: String) {
-    driver.navigate.to(s"$referenceDirectory/$link")
+    driver.navigate.to(s"http://$referenceDirectory/$link")
   }
 
   def run() {
@@ -90,7 +92,7 @@ class Grinder(args: Seq[String]) {
             printStats()
             throw new QuitRequestedException
           }
-        }
+      }
       }
       timer.stop()
       pb.stop()
@@ -103,7 +105,6 @@ class Grinder(args: Seq[String]) {
     def printStats() = {
       import rapture.json._
       import jsonBackends.jawn._
-      import formatters.humanReadable.jsonFormatterImplicit
 
       println("Fails : " + fails)
       println("Passes: " + passes)
@@ -118,15 +119,16 @@ class Grinder(args: Seq[String]) {
           "totalCount" : ${testCases.length},
           "selectedCount" : ${selectedTests.length},
           "results": ${
-            results.map(r => json"""{
+        results.map(r => json"""{
               "id": ${r.id},
               "pass": ${r.pass}
             }""")
-          }
+      }
         }
       }"""
       val fw = new java.io.FileWriter(resultDirectory + "/results.json")
       try {
+        import formatters.humanReadable.jsonFormatterImplicit
         fw.write(Json.format(json))
       } finally {
         fw.close()
@@ -160,124 +162,4 @@ class Grinder(args: Seq[String]) {
       fos.close()
     }
   }
-<<<<<<< HEAD
-
-<<<<<<< HEAD
-  def isScreenShotSame(testFile:File, refImageFile:File): Boolean = {
-    val referenceImage = ImageIO.read(refImageFile)
-
-    if (!(testFile.exists() && refImageFile.exists())) {
-      false
-    } else {
-      val testImage = ImageIO.read(testFile)
-      val referenceImage = ImageIO.read(refImageFile)
-
-      val isExists = if (hasEqualDimensions(testImage, referenceImage)) {
-        scalaxy.streams.optimize {
-          var failures = 0
-          for (
-            w <- 0 until testImage.getWidth;
-            h <- 0 until testImage.getHeight
-          ) {
-            val same = testImage.getRGB(w, h) == referenceImage.getRGB(w, h)
-            if (!same) {
-              failures += 1
-            }
-          }
-          failures < COMPARISION_THRESHOLD
-        }
-        val count = comparisons.toList.count(_ == false)
-        count < COMPARISION_THRESHOLD
-      } else {
-        false
-      }
-      isExists
-    }
-  }
-
-  private def hasEqualDimensions(testImage: BufferedImage, referenceImage: BufferedImage): Boolean = {
-    testImage.getWidth == referenceImage.getWidth && testImage.getHeight == referenceImage.getHeight
-  }
-
-  /*
-  override def afterEach() = {
-    FileUtils.cleanDirectory(new File(imageDirectory))
-  }
-  */
 }
-
-class Timer {
-  private var consumedTime = 0L
-  private var startTime = 0L
-  private var running = false
-
-  def start() {
-    synchronized {
-      running = true
-      startTime = System.currentTimeMillis()
-    }
-  }
-
-  def stop() {
-    synchronized {
-      consumedTime += System.currentTimeMillis() - startTime
-      running = false
-    }
-  }
-
-  def getConsumedTime: Long = {
-    synchronized {
-      if (running) {
-        throw new IllegalStateException("Time being evaluated while running")
-      }
-      consumedTime
-    }
-  }
-}
-
-object GrinderUtil {
-  private val COMPARISION_THRESHOLD = 50
-
-  def isScreenShotSame(testFile: File, refImageFile: File): Boolean = {
-    val referenceImage = ImageIO.read(refImageFile)
-
-    if (!(testFile.exists() && refImageFile.exists())) {
-      false
-    } else {
-      val testImage = ImageIO.read(testFile)
-      val referenceImage = ImageIO.read(refImageFile)
-
-      val isExists = if (hasEqualDimensions(testImage, referenceImage)) {
-        scalaxy.streams.optimize {
-          var failures = 0
-          var h = 0
-          val width = testImage.getWidth
-          val height = testImage.getHeight
-          while (h < height && failures < COMPARISION_THRESHOLD) {
-            var w = 0
-            while (w < width && failures < COMPARISION_THRESHOLD) {
-              val same = testImage.getRGB(w, h) == referenceImage.getRGB(w, h)
-              if (!same) {
-                failures += 1
-              }
-              w += 1
-            }
-            h += 1
-          }
-          failures < COMPARISION_THRESHOLD
-        }
-      } else {
-        false
-      }
-      isExists
-    }
-  }
-
-  private def hasEqualDimensions(testImage: BufferedImage, referenceImage: BufferedImage): Boolean = {
-    testImage.getWidth == referenceImage.getWidth && testImage.getHeight == referenceImage.getHeight
-  }
-
-}
-=======
-}
->>>>>>> 2fafd822d777277c32fbfb664f27ad912b76b7ee

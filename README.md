@@ -36,7 +36,7 @@ stored in `data/test-cases.xml`.
 sbt run compare <browser-name> <auth-key-for-gngr>
 ```
 
-where `browser-name` can be either `firefox` or `gngr`.
+where `browser-name` can be either `firefox` `headless` or `gngr`.
 
 This will open a new browser window, navigate to the tests and their references, screenshot them and compare the images.
 

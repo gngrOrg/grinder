@@ -19,24 +19,22 @@ object GrinderUtil {
       val referenceImage = ImageIO.read(refImageFile)
 
       val isExists = if (hasEqualDimensions(testImage, referenceImage)) {
-        scalaxy.streams.optimize {
-          var failures = 0
-          var h = 0
-          val width = testImage.getWidth
-          val height = testImage.getHeight
-          while (h < height && failures < FAILURE_THRESHOLD) {
-            var w = 0
-            while (w < width && failures < FAILURE_THRESHOLD) {
-              val same = isPixelSimilar(testImage.getRGB(w, h), referenceImage.getRGB(w, h))
-              if (!same) {
-                failures += 1
-              }
-              w += 1
+        var failures = 0
+        var h = 0
+        val width = testImage.getWidth
+        val height = testImage.getHeight
+        while (h < height && failures < FAILURE_THRESHOLD) {
+          var w = 0
+          while (w < width && failures < FAILURE_THRESHOLD) {
+            val same = isPixelSimilar(testImage.getRGB(w, h), referenceImage.getRGB(w, h))
+            if (!same) {
+              failures += 1
             }
-            h += 1
+            w += 1
           }
-          failures < FAILURE_THRESHOLD
+          h += 1
         }
+        failures < FAILURE_THRESHOLD
       } else {
         false
       }

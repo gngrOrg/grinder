@@ -28,6 +28,8 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
       ResultParser.getResults(basePath)
     }
 
+  private val imgUploadEnabled = options.isDefinedAt("uploadImg")
+
   val browserName = args(0)
 
   lazy val driver = browserName match {
@@ -102,10 +104,12 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
         } else if (isStopRequired(result)) {
           timer.stop()
 
-          val testPath = testHref.toPath()
-          ImgUpload.uploadImgur(testPath)
-          val refPath = refHref.toPath()
-          ImgUpload.uploadImgur(refPath)
+          if (imgUploadEnabled) {
+            val testPath = testHref.toPath()
+            ImgUpload.uploadImgur(testPath)
+            val refPath = refHref.toPath()
+            ImgUpload.uploadImgur(refPath)
+          }
 
           printStats()
           throw new QuitRequestedException

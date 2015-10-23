@@ -33,27 +33,6 @@ object CheckBaseLine {
 
   private def upload(tr: ResultParser.TestResult, baseLine: BaseLine) {
     val newShot = baseLine.resolveNewScreenshot(tr.id)
-    uploadImgur(newShot)
-  }
-
-  private def uploadImgur(path: Path) {
-    println("Uploading: " + path)
-
-    val fileBody = new FileBody(path.toFile())
-
-    val builder = MultipartEntityBuilder.create()
-    builder.addTextBody("key", "b3625162d3418ac51a9ee805b1840452")
-    builder.addPart("image", fileBody)
-    val entity = builder.build()
-
-    val post = new HttpPost("https://imgur.com/api/upload.xml")
-    post.setEntity(entity)
-
-    val client = HttpClientBuilder.create().build()
-    val response = client.execute(post)
-
-    val responseXML = xml.XML.load(response.getEntity.getContent)
-    println(responseXML \ "original_image")
-    println(responseXML \ "imgur_page")
+    ImgUpload.uploadImgur(newShot)
   }
 }

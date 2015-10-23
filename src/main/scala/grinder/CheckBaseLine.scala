@@ -32,9 +32,6 @@ object CheckBaseLine {
   }
 
   private def upload(tr: ResultParser.TestResult, baseLine: BaseLine) {
-    val baseShot = baseLine.resolveBaseScreenshot(tr.id)
-    uploadImgur(baseShot)
-
     val newShot = baseLine.resolveNewScreenshot(tr.id)
     uploadImgur(newShot)
   }

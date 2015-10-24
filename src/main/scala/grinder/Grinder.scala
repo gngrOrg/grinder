@@ -1,25 +1,34 @@
 package grinder
 
-import java.io.{File, FileOutputStream}
-import java.nio.file.FileSystems
+import java.io.File
+import java.io.FileOutputStream
+import java.util.concurrent.TimeUnit
+import org.openqa.selenium.OutputType
+import org.openqa.selenium.firefox.FirefoxDriver
+import me.tongfei.progressbar.ProgressBar
+import org.openqa.selenium.Dimension
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.util.concurrent.TimeUnit
-
-import me.tongfei.progressbar.ProgressBar
-import org.openqa.selenium.firefox.FirefoxDriver
-import org.openqa.selenium.{Dimension, OutputType, WebDriverException}
-import utils.HeadlessDriver
-
-import scala.concurrent._
+import org.openqa.selenium.WebDriverException
+import java.nio.file.FileSystems
+import java.nio.file.Paths
 
 case class TestResult(id: String, pass: Boolean)
 
-class Grinder(args: Seq[String]) {
+class Grinder(args: Seq[String], options: Map[String, String]) {
   private val resourceDir: String = s"${grinder.Boot.UserDir}/nightly-unstable"
   private val referenceDirectory = s"localhost:8000//nightly-unstable/xhtml1"
   private val imageDirectory: String = s"${grinder.Boot.UserDir}/data/screenshot"
   private val resultDirectory: String = s"${grinder.Boot.UserDir}/data/"
+
+  private val baseLineResultsOpt =
+    options.get("baseLine").map{p =>
+      val basePath = Paths.get(p).toAbsolutePath().normalize()
+      println("Using baseline: " + basePath)
+      ResultParser.getResults(basePath)
+    }
+
+  private val imgUploadEnabled = options.isDefinedAt("uploadImg")
 
   val browserName = args(0)
 
@@ -32,11 +41,10 @@ class Grinder(args: Seq[String]) {
       }
     }
     case "firefox" => new FirefoxDriver()
-    case "headless" => new HeadlessDriver().getDriverInstance
   }
 
   private def navigateToPage(link: String) {
-    driver.navigate.to(s"http://$referenceDirectory/$link")
+    driver.navigate.to(s"$referenceDirectory/$link")
   }
 
   def run() {
@@ -70,7 +78,8 @@ class Grinder(args: Seq[String]) {
         navAndSnap(test.testHref)
         navAndSnap(test.referenceHref)
         val same = GrinderUtil.isScreenShotSame(testHref, refHref)
-        results +:= TestResult(test.testHref, same)
+        val result = TestResult(test.testHref, same)
+        results +:= result
         if (same) {
           passes += 1
         } else {
@@ -92,7 +101,19 @@ class Grinder(args: Seq[String]) {
             printStats()
             throw new QuitRequestedException
           }
-      }
+        } else if (isStopRequired(result)) {
+          timer.stop()
+
+          if (imgUploadEnabled) {
+            val testPath = testHref.toPath()
+            ImgUpload.uploadImgur(testPath)
+            val refPath = refHref.toPath()
+            ImgUpload.uploadImgur(refPath)
+          }
+
+          printStats()
+          throw new QuitRequestedException
+        }
       }
       timer.stop()
       pb.stop()
@@ -105,6 +126,7 @@ class Grinder(args: Seq[String]) {
     def printStats() = {
       import rapture.json._
       import jsonBackends.jawn._
+      import formatters.humanReadable.jsonFormatterImplicit
 
       println("Fails : " + fails)
       println("Passes: " + passes)
@@ -128,11 +150,23 @@ class Grinder(args: Seq[String]) {
       }"""
       val fw = new java.io.FileWriter(resultDirectory + "/results.json")
       try {
-        import formatters.humanReadable.jsonFormatterImplicit
         fw.write(Json.format(json))
       } finally {
         fw.close()
       }
+    }
+
+    def isStopRequired(result: TestResult): Boolean = {
+      !result.pass && (
+        baseLineResultsOpt match {
+          case Some(baseLineResults) =>
+            val regression = baseLineResults.find(_.id == result.id).map(b => b.pass == "true").getOrElse(false)
+            if (regression) {
+              println("\nFound regression: " + result.id)
+            }
+            regression
+          case None => false
+        })
     }
   }
 

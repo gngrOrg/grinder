@@ -46,11 +46,23 @@ object Boot extends App {
 
   def compare() {
     if (args.length > 1) {
-      val cssTest = new Grinder(args.tail)
+      val (argsRem, optionsMap) = separateArgsOptions(args.tail)
+      val cssTest = new Grinder(argsRem, optionsMap)
       cssTest.run()
       println("Run finished!")
     } else {
       println("Please specify the browser: [gngr / firefox]")
     }
   }
+
+  private def separateArgsOptions(args: Array[String]) = {
+    val (optionsStr, argsRem) = args.partition(_.startsWith("--"))
+    val options = optionsStr.map{os =>
+      val firstTwoFields = os.substring(2).split('=').filter(_.length > 0).take(2)
+      (firstTwoFields(0), firstTwoFields(1))
+    }
+    val optionsMap = options.toMap
+    (argsRem, optionsMap)
+  }
+
 }

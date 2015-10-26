@@ -29,6 +29,7 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
     }
 
   private val imgUploadEnabled = options.isDefinedAt("uploadImg")
+  private val quitOnRegression = options.isDefinedAt("quitOnRegress")
 
   val browserName = args(0)
 
@@ -164,7 +165,7 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
             if (regression) {
               println("\nFound regression: " + result.id)
             }
-            regression
+            quitOnRegression && regression
           case None => false
         })
     }

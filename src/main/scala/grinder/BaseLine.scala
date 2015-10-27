@@ -8,11 +8,13 @@ class BaseLine(newPathStr: String, basePathStr: String) {
   println("New path: " + newPath)
   println("Base path: " + basePath)
 
-  val newResults = ResultParser.getResults(newPath)
-  val (newPassed, newFailed) = newResults.partition(_.pass == "true")
-
   val baseResults = ResultParser.getResults(basePath)
   val (basePassed, baseFailed) = baseResults.partition(_.pass == "true")
+
+  val newResults = ResultParser.getResults(newPath)
+  val (existingResults, newlyAdded) = newResults.partition(n => baseResults.exists(_.id == n.id))
+
+  val (newPassed, newFailed) = existingResults.partition(_.pass == "true")
 
   val progressions = newPassed.filterNot(n => basePassed.contains(n))
   val regressions = newFailed.filterNot(n => baseFailed.contains(n))

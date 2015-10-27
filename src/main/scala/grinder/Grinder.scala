@@ -30,6 +30,7 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
 
   private val imgUploadEnabled = options.isDefinedAt("uploadImg")
   private val quitOnRegression = options.isDefinedAt("quitOnRegress")
+  private val hrefFilterOpt = options.get("hrefFilter")
 
   val browserName = args(0)
 
@@ -62,7 +63,12 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
 
     val parser = new TestXmlParser()
     val testCases = parser.parserTests
-    val selectedTests = testCases // .filter(_.testHref contains "blocks-") // .drop(2000).take(10)
+    val selectedTests = hrefFilterOpt match {
+      case Some(hrefFilter) =>
+        testCases.filter(_.testHref contains hrefFilter)
+      case None =>
+        testCases
+      }
 
     try {
       // driver.manage().window().maximize()

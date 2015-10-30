@@ -31,6 +31,7 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
   private val imgUploadEnabled = options.isDefinedAt("uploadImg")
   private val quitOnRegression = options.isDefinedAt("quitOnRegress")
   private val hrefFilterOpt = options.get("hrefFilter")
+  private val failureScale = options.get("failureScale").map(java.lang.Double.parseDouble(_)).getOrElse(1d)
 
   val browserName = args(0)
 
@@ -84,7 +85,7 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
         val refHref = new File(s"$imageDirectory/${enc(test.referenceHref)}.png")
         navAndSnap(test.testHref)
         navAndSnap(test.referenceHref)
-        val same = GrinderUtil.isScreenShotSame(testHref, refHref)
+        val same = GrinderUtil.isScreenShotSame(testHref, refHref, failureScale)
         val result = TestResult(test.testHref, same)
         results +:= result
         if (same) {

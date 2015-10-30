@@ -9,7 +9,8 @@ object GrinderUtil {
   private val FAILURE_THRESHOLD = 50
   private val COMPARISION_THRESHOLD = 10
 
-  def isScreenShotSame(testFile: File, refImageFile: File): Boolean = {
+  def isScreenShotSame(testFile: File, refImageFile: File, failureScale: Double = 1d): Boolean = {
+    val scaledFailureThreshold = FAILURE_THRESHOLD * failureScale
     val referenceImage = ImageIO.read(refImageFile)
 
     if (!(testFile.exists() && refImageFile.exists())) {
@@ -23,9 +24,9 @@ object GrinderUtil {
         var h = 0
         val width = testImage.getWidth
         val height = testImage.getHeight
-        while (h < height && failures < FAILURE_THRESHOLD) {
+        while (h < height && failures < scaledFailureThreshold) {
           var w = 0
-          while (w < width && failures < FAILURE_THRESHOLD) {
+          while (w < width && failures < scaledFailureThreshold) {
             val same = isPixelSimilar(testImage.getRGB(w, h), referenceImage.getRGB(w, h))
             if (!same) {
               failures += 1
@@ -34,7 +35,7 @@ object GrinderUtil {
           }
           h += 1
         }
-        failures < FAILURE_THRESHOLD
+        failures < scaledFailureThreshold
       } else {
         false
       }

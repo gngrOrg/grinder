@@ -16,6 +16,22 @@ object UpdateBaseLine {
     println(s"[new] passed: $numNewPassed (${numNewPassed - numBasePassed}),  failed: $numNewFailed (${numNewFailed - numBaseFailed})")
 
     {
+      val newlyAdded = baseLine.newlyAdded
+      println("newlyAdded: " + newlyAdded.length)
+      if (newlyAdded.length > 0) {
+        println("[yY] to copy files from new to baseline")
+        val response = io.StdIn.readLine()
+        if (response.matches("[yY]")) {
+          newlyAdded.foreach { p =>
+            val fromPath = baseLine.resolveNewScreenshot(p.id)
+            val toPath = baseLine.resolveBaseScreenshot(p.id)
+            Files.copy(fromPath, toPath, StandardCopyOption.REPLACE_EXISTING)
+          }
+        }
+      }
+    }
+
+    {
       val progressions = baseLine.progressions
       println("Progressions: " + progressions.length)
       if (progressions.length > 0) {

@@ -29,6 +29,9 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
     }
 
   private val imgUploadEnabled = options.isDefinedAt("uploadImg")
+  private val quitOnRegression = options.isDefinedAt("quitOnRegress")
+  private val hrefFilterOpt = options.get("hrefFilter")
+  private val failureScale = options.get("failureScale").map(java.lang.Double.parseDouble(_)).getOrElse(1d)
 
   val browserName = args(0)
 
@@ -61,7 +64,12 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
 
     val parser = new TestXmlParser()
     val testCases = parser.parserTests
-    val selectedTests = testCases // .filter(_.testHref contains "blocks-") // .drop(2000).take(10)
+    val selectedTests = hrefFilterOpt match {
+      case Some(hrefFilter) =>
+        testCases.filter(_.testHref contains hrefFilter)
+      case None =>
+        testCases
+      }
 
     try {
       // driver.manage().window().maximize()
@@ -77,7 +85,7 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
         val refHref = new File(s"$imageDirectory/${enc(test.referenceHref)}.png")
         navAndSnap(test.testHref)
         navAndSnap(test.referenceHref)
-        val same = GrinderUtil.isScreenShotSame(testHref, refHref)
+        val same = GrinderUtil.isScreenShotSame(testHref, refHref, failureScale)
         val result = TestResult(test.testHref, same)
         results +:= result
         if (same) {
@@ -164,7 +172,7 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
             if (regression) {
               println("\nFound regression: " + result.id)
             }
-            regression
+            quitOnRegression && regression
           case None => false
         })
     }

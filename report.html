@@ -38,6 +38,10 @@ form { display: inline-block}
   margin: 1px;
 }
 
+.selected {
+  background: lightgreen;
+}
+
 </style>
 <script>
 function getData(type, url, callback) {
@@ -91,6 +95,15 @@ function getData(type, url, callback) {
     document.getElementById("details").innerHTML = d;
   }
 
+  function selectElem(e) {
+    console.log(e);
+    var prior = document.querySelector(".selected");
+    if (prior) {
+      prior.classList.remove("selected");
+    }
+    e.classList.add("selected");
+  }
+
   function report(path1, path2, data, baseline, testInfo) {
     var dataRes = data["css21-reftests"].results;
     var baseRes = baseline["css21-reftests"].results;
@@ -99,10 +112,13 @@ function getData(type, url, callback) {
 
       var e = document.createElement("li");
       e.innerHTML = dr.id;
-      e.onclick = () => showDetails([
-        {path: path1, href: info.href},
-        {path: path1, href: info.refHref}
-      ]);
+      e.onclick = () => {
+        showDetails([
+          {path: path1, href: info.href},
+          {path: path1, href: info.refHref}
+        ]);
+        selectElem(e);
+      }
 
       document.getElementById(dr.pass == "true" ? "passes" : "fails").appendChild(e);
 
@@ -111,21 +127,27 @@ function getData(type, url, callback) {
         if (br.pass != dr.pass) {
           var e2 = document.createElement("li");
           e2.innerHTML = dr.id;
-          e2.onclick = () => showDetails([
-            {path: path1, href: info.href},
-            {path: path1, href: info.refHref},
-            {path: path2, href: info.href},
-            {path: path2, href: info.refHref}
-          ]);
+          e2.onclick = () => {
+            showDetails([
+              {path: path1, href: info.href},
+              {path: path1, href: info.refHref},
+              {path: path2, href: info.href},
+              {path: path2, href: info.refHref}
+            ]);
+            selectElem(e2);
+          }
           document.getElementById(br.pass == "true" ? "regressions" : "progressions").appendChild(e2);
         }
       } else {
         var newTest = document.createElement("li");
         newTest.innerHTML = dr.id + '[' + (dr.pass == 'true' ? "Pass" : "Fail") + ']';
-        newTest.onclick = () => showDetails([
-          {path: path1, href: info.href},
-          {path: path1, href: info.refHref}
-        ]);
+        newTest.onclick = () => {
+          showDetails([
+            {path: path1, href: info.href},
+            {path: path1, href: info.refHref}
+          ]);
+          selectElem(newTest);
+        }
         document.getElementById("new").appendChild(newTest);
       }
     });

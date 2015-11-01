@@ -26,6 +26,24 @@ form { display: inline-block}
   background: lightgrey;
 }
 
+.list .priorityLow {
+  color: grey;
+}
+
+.list .priorityHigh {
+  font-weight: bold;
+}
+
+.list .hasNote {
+}
+
+.list .hasNote::after {
+  content: "\2020";
+  padding-left: 1mm;
+  padding-right: 1mm;
+  margin-left: 2mm;
+}
+
 #details {
   margin: .3em 0;
   border: 1px solid grey;
@@ -65,8 +83,10 @@ function getData(type, url, callback) {
     getData("json", path1 + "/results.json", function(data1) {
       getData("json", path2 + "/results.json", function(data2) {
         getData("document", path1 + "/test-cases.xml", function(data3) {
-          document.querySelectorAll(".list ol").forEach((e) => e.innerHTML = "");
-          report(path1, path2, data1.response, data2.response, data3.responseXML);
+          getData("json", path2 + "/notes.json", function(notesXHR) {
+            document.querySelectorAll(".list ol").forEach((e) => e.innerHTML = "");
+            report(path1, path2, data1.response, data2.response, data3.responseXML, notesXHR.response);
+          });
         });
       });
     });
@@ -90,13 +110,13 @@ function getData(type, url, callback) {
     return `<a title=${i.path + i.href} href=${"nightly-unstable/xhtml1/" + i.href}><img src=${i.path + "/screenshot/" + safeEncode(i.href) + ".png"} /></a>`;
   }
 
-  function showDetails(imgs) {
+  function showDetails(imgs, note) {
     var d = imgs.map(img => mkScreenshot(img)).join("");
-    document.getElementById("details").innerHTML = d;
+    var noteHtml = note ? note : "";
+    document.getElementById("details").innerHTML = noteHtml + d;
   }
 
   function selectElem(e) {
-    console.log(e);
     var prior = document.querySelector(".selected");
     if (prior) {
       prior.classList.remove("selected");
@@ -104,7 +124,30 @@ function getData(type, url, callback) {
     e.classList.add("selected");
   }
 
-  function report(path1, path2, data, baseline, testInfo) {
+  function report(path1, path2, data, baseline, testInfo, notes) {
+    function getNote(id) {
+      if (notes) {
+        var note = notes[id];
+        return note ? "<p>"+note+"</p>" : null;
+      } else {
+        return null;
+      }
+    }
+
+    function addClasses(e, id) {
+      if (notes) {
+        var note = notes[id];
+        if (note) {
+          e.classList.add("hasNote");
+          if (note.startsWith("[low]")) {
+            e.classList.add("priorityLow");
+          } else if (note.startsWith("[high]")) {
+            e.classList.add("priorityHigh");
+          }
+        }
+      }
+    }
+
     var dataRes = data["css21-reftests"].results;
     var baseRes = baseline["css21-reftests"].results;
     dataRes.forEach(function(dr) {
@@ -112,11 +155,12 @@ function getData(type, url, callback) {
 
       var e = document.createElement("li");
       e.innerHTML = dr.id;
+      addClasses(e, dr.id);
       e.onclick = () => {
         showDetails([
           {path: path1, href: info.href},
           {path: path1, href: info.refHref}
-        ]);
+        ], getNote(info.href));
         selectElem(e);
       }
 
@@ -127,6 +171,7 @@ function getData(type, url, callback) {
         if (br.pass != dr.pass) {
           var e2 = document.createElement("li");
           e2.innerHTML = dr.id;
+          addClasses(e2, dr.id);
           e2.onclick = () => {
             showDetails([
               {path: path1, href: info.href},
@@ -141,6 +186,7 @@ function getData(type, url, callback) {
       } else {
         var newTest = document.createElement("li");
         newTest.innerHTML = dr.id + '[' + (dr.pass == 'true' ? "Pass" : "Fail") + ']';
+        addClasses(newTest, dr.id);
         newTest.onclick = () => {
           showDetails([
             {path: path1, href: info.href},

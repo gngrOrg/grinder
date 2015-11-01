@@ -126,9 +126,9 @@ function getData(type, url, callback) {
   }
 
   function report(path1, path2, data, baseline, testInfo, notes) {
-    function getNote(id) {
+    function getNote(info) {
       if (notes) {
-        var note = notes[id];
+        var note = notes[info.href];
         return note ? "<p>"+note+"</p>" : null;
       } else {
         return null;
@@ -161,7 +161,7 @@ function getData(type, url, callback) {
         showDetails([
           {path: path1, href: info.href},
           {path: path1, href: info.refHref}
-        ], getNote(info.href));
+        ], getNote(info));
         selectElem(e);
       }
 
@@ -179,7 +179,7 @@ function getData(type, url, callback) {
               {path: path1, href: info.refHref},
               {path: path2, href: info.href},
               {path: path2, href: info.refHref}
-            ]);
+            ], getNote(info));
             selectElem(e2);
           }
           document.getElementById(br.pass == "true" ? "regressions" : "progressions").appendChild(e2);

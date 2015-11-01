@@ -57,6 +57,13 @@ form { display: inline-block}
   margin: 1px;
 }
 
+#details .flag {
+  background: lightgrey;
+  padding: 2pt;
+  border-radius: 2pt;
+  margin: 2pt;
+}
+
 .selected {
   background: lightgreen;
 }
@@ -77,6 +84,7 @@ function getData(type, url, callback) {
 <script>
   function formSubmitted(f) {
     NodeList.prototype.forEach = Array.prototype.forEach; 
+    NodeList.prototype.map = Array.prototype.map;
     document.querySelectorAll(".list ol").forEach((e) => e.innerHTML = "Loading...");
 
     var path1 = f.path1.value;
@@ -99,7 +107,8 @@ function getData(type, url, callback) {
     var t = testInfo.querySelector("test[id='"+id+"']");
     return {
       href: t.querySelector("test-href").innerHTML,
-      refHref: t.querySelector("reference-href").innerHTML
+      refHref: t.querySelector("reference-href").innerHTML,
+      flags: t.querySelectorAll("flag").map(e => e.innerHTML)
     };
   }
 
@@ -127,11 +136,12 @@ function getData(type, url, callback) {
 
   function report(path1, path2, data, baseline, testInfo, notes) {
     function getNote(info) {
+      var flags = "<p>" + info.flags.map(f => "<span class='flag'>"+f+"</span>").join("") + "</p>";
       if (notes) {
         var note = notes[info.href];
-        return note ? "<p>"+note+"</p>" : null;
+        return note ? flags + "<p>"+note+"</p>" : flags;
       } else {
-        return null;
+        return flags;
       }
     }
 

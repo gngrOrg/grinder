@@ -59,6 +59,7 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
     val timer = new Timer()
     var passes = 0
     var fails = 0
+    var progressions = 0
     var results = Seq[TestResult]()
     val startDate = LocalDate.now()
 
@@ -93,8 +94,20 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
         } else {
           fails += 1
         }
+        val baseLineResultOpt = baseLineResultsOpt match {
+          case Some(baseLineResults) =>
+            baseLineResults.find(_.id == result.id)
+          case _ => None
+        }
+
+        baseLineResultOpt.foreach {blResult =>
+          if (blResult.pass != "true" && same) {
+            progressions += 1
+          }
+        }
+
         pb.step()
-        pb.setExtraMessage("Fails: " + fails)
+        pb.setExtraMessage("Fails: " + fails + " Progressions: " + progressions)
 
         if (Pause.isPauseRequested) {
           timer.stop()
@@ -109,7 +122,7 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
             printStats()
             throw new QuitRequestedException
           }
-        } else if (isStopRequired(result)) {
+        } else if (isStopRequired(result, baseLineResultOpt)) {
           timer.stop()
 
           if (imgUploadEnabled) {
@@ -164,17 +177,14 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
       }
     }
 
-    def isStopRequired(result: TestResult): Boolean = {
-      !result.pass && (
-        baseLineResultsOpt match {
-          case Some(baseLineResults) =>
-            val regression = baseLineResults.find(_.id == result.id).map(b => b.pass == "true").getOrElse(false)
-            if (regression) {
-              println("\nFound regression: " + result.id)
-            }
-            quitOnRegression && regression
-          case None => false
-        })
+    def isStopRequired(result: TestResult, baseLineResultOpt: Option[ResultParser.TestResult]): Boolean = {
+      !result.pass && ({
+        val regression = baseLineResultOpt.map(b => b.pass == "true").getOrElse(false)
+        if (regression) {
+          println("\nFound regression: " + result.id)
+        }
+        quitOnRegression && regression
+      })
     }
   }
 

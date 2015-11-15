@@ -9,19 +9,33 @@ class CssReftestXmlParser {
 
   val UNSUPPORTED_FLAGS = List("Interact","Paged")
 
+  private implicit def node2Convenience(n:xml.Node) = new {
+    def attrib(key: String):String = {
+      n.attribute(key).head.text
+    }
+
+    def firstChild(tag: String) = {
+      (n \\ tag).head
+    }
+  }
+
   def parse(reftestXmlFile: File) = {
 
     val refTestXml = XmlUtils.loadXmlFromFile(reftestXmlFile)
     val rows = refTestXml \\ "tbody"
 
     val testCases = rows.map(row => {
-      val tdNodes = row \ "tr" \\ "td"
-      val testTitle = tdNodes.head.attribute("title").head.text
-      val testHref = (tdNodes.head \\ "a").head.attribute("href").head.text
-      val refrenceValue = (tdNodes(1) \ "a").head.text
-      val refrenceHref = (tdNodes(1) \ "a").head.attribute("href").head.text
-      val flagTitle = (tdNodes(2) \\ "abbr").map(node => node.attribute("title").head.text).mkString(" ")
-      val flagValue = (tdNodes(2) \\ "abbr").map(node => node.head.text).mkString(" ")
+      val trs = row \\ "tr"
+      val tdNodes = trs.head \\ "td"
+      val td0 = tdNodes.head
+      val td1 = tdNodes(1)
+      val td2 = tdNodes(2)
+      val testTitle = td0.attrib("title")
+      val testHref = td0.firstChild("a").attrib("href")
+      val refrenceValue = td1.firstChild("a").text
+      val refrenceHref = td1.firstChild("a").attrib("href")
+      val flagTitle = (td2 \\ "abbr").map(node => node.attrib("title")).mkString(" ")
+      val flagValue = (td2 \\ "abbr").map(node => node.head.text).mkString(" ")
 
       TestCase(testTitle, testHref, refrenceValue, refrenceHref, flagTitle, flagValue.split("\\s+").filter(_.length > 0))
     }).filterNot(hasUnsupportedFlag)

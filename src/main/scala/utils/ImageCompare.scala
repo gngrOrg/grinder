@@ -6,7 +6,7 @@ import java.io.File
 import javax.imageio.ImageIO
 
 object GrinderUtil {
-  private val FAILURE_THRESHOLD = 50
+  private val FAILURE_THRESHOLD = 25
   private val COMPARISION_THRESHOLD = 10
 
   def isScreenShotSame(testFile: File, refImageFile: File, failureScale: Double = 1d): Boolean = {

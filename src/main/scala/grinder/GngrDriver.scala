@@ -142,7 +142,9 @@ class GngrDriver(authKey: String) extends WebDriver with TakesScreenshot {
     val is = socket.getInputStream
     val writer = new OutputStreamWriter(out)
 
-    responseHandler(writer, is)
+    val res = responseHandler(writer, is)
+    socket.close()
+    res
   }
 
   def close() {

@@ -2,6 +2,7 @@ package grinder
 
 import java.io.File
 import java.nio.file._
+import org.openqa.selenium.OutputType
 
 object Boot extends App {
   lazy val UserDir = {
@@ -23,6 +24,7 @@ object Boot extends App {
       case "compare" => compare()
       case "updateBase" => UpdateBaseLine.update(args.tail)
       case "checkBase" => CheckBaseLine.check(args.tail)
+      case "benchmark" => benchmark()
     }
   } catch {
     case te: TestException => println(te.summary)
@@ -52,6 +54,33 @@ object Boot extends App {
       println("Run finished!")
     } else {
       println("Please specify the browser: [gngr / firefox]")
+    }
+  }
+
+  def benchmark() {
+    if (args.length > 1) {
+      val (argsRem, optionsMap) = separateArgsOptions(args.tail)
+      val keyOpt = optionsMap.get("key")
+      keyOpt match {
+        case Some(key) =>
+          val driver = new GngrDriver(key)
+          val repeatCount = 6
+          var totalElapsedTime = 0L
+          for (i <- 0 until repeatCount) {
+          val startTime = System.currentTimeMillis()
+            driver.navigate.to(argsRem(0))
+            val bytes = driver.getScreenshotAs(OutputType.BYTES)
+            val endTime = System.currentTimeMillis()
+            totalElapsedTime += (endTime - startTime)
+            println(s"$i : Elapsed time: ${endTime - startTime}, Total: $totalElapsedTime")
+          }
+          println(s"Time taken: ${totalElapsedTime/repeatCount.toDouble}")
+          driver.close()
+        case None =>
+          println("auth key required. specify with --key=xxx")
+      }
+    } else {
+      println("Please specify the url")
     }
   }
 

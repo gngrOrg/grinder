@@ -110,8 +110,7 @@ function getData(type, url, callback) {
   }
 
   function mkScreenshot(i) {
-    console.log(i);
-    return `<a title=${i.path} href=${"nightly-unstable/xhtml1/" + i.href}><img src=${i.path + "/screenshot/" + safeEncode(i.id) + ".png"} /></a>`;
+    return `<a title=${i.path} href=${"changeTests/tests/" + i.id}><img src=${i.path + "/screenshot/" + safeEncode(i.id) + ".png"} /></a>`;
   }
 
   function showDetails(imgs) {
@@ -130,7 +129,6 @@ function getData(type, url, callback) {
   function report(path1, data) {
     var dataRes = data["change-tests"].results;
     dataRes.forEach(function(dr) {
-      console.log(dr);
       var e = document.createElement("li");
       e.innerHTML = dr.id;
       e.onclick = () => {

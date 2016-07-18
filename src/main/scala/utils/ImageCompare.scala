@@ -19,7 +19,7 @@ object GrinderUtil {
       val testImage = ImageIO.read(testFile)
       val referenceImage = ImageIO.read(refImageFile)
 
-      val isExists = if (hasEqualDimensions(testImage, referenceImage)) {
+      if (hasEqualDimensions(testImage, referenceImage)) {
         var failures = 0
         var h = 0
         val width = testImage.getWidth
@@ -39,7 +39,6 @@ object GrinderUtil {
       } else {
         false
       }
-      isExists
     }
   }
 

@@ -4,6 +4,7 @@ target
 /project/target
 /data/*
 /nightly-unstable
+/changeTests
 /.cache-main
 /.cache-tests
 /.classpath

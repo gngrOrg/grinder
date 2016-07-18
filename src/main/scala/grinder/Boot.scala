@@ -22,6 +22,7 @@ object Boot extends App {
     command match {
       case "prepare" => prepare()
       case "compare" => compare()
+      case "checkChange" => checkChange()
       case "updateBase" => UpdateBaseLine.update(args.tail)
       case "checkBase" => CheckBaseLine.check(args.tail)
       case "benchmark" => benchmark()
@@ -51,6 +52,17 @@ object Boot extends App {
       val (argsRem, optionsMap) = separateArgsOptions(args.tail)
       val cssTest = new Grinder(argsRem, optionsMap)
       cssTest.run()
+      println("Run finished!")
+    } else {
+      println("Please specify the browser: [gngr / firefox]")
+    }
+  }
+
+  def checkChange() {
+    if (args.length > 1) {
+      val (argsRem, optionsMap) = separateArgsOptions(args.tail)
+      val changeTestChecker = new ChangeChecker(argsRem, optionsMap)
+      changeTestChecker.run()
       println("Run finished!")
     } else {
       println("Please specify the browser: [gngr / firefox]")

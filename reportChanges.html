@@ -1,0 +1,176 @@
+<html>
+<style>
+h1, h2, h3 {
+  color: #555;
+}
+
+h1 { font-size: 1.3em; border-bottom: 1px solid grey; display: inline-block; margin-right: 1em;}
+form { display: inline-block}
+
+.list {
+  max-height: 15em;
+  max-width: 25%;
+  overflow: auto;
+  display: inline-block;
+  vertical-align: top;
+  border:1px solid blue;
+  padding:.3em;
+}
+
+.list h3 {padding: 0; margin: 0}
+
+.list li {
+  cursor: pointer;
+}
+
+.list li:hover {
+  background: lightgrey;
+}
+
+.list .priorityLow {
+  color: grey;
+}
+
+.list .priorityHigh {
+  font-weight: bold;
+}
+
+.list .hasNote {
+}
+
+.list .hasNote::after {
+  content: "\2020";
+  padding-left: 1mm;
+  padding-right: 1mm;
+  margin-left: 2mm;
+}
+
+#details {
+  margin: .3em 0;
+  border: 1px solid grey;
+  padding: .3em;
+}
+
+#details img {
+  border: 1px dotted lightgrey;
+  width: 49%;
+  margin: 1px;
+}
+
+#details .flag {
+  background: lightgrey;
+  padding: 2pt;
+  border-radius: 2pt;
+  margin: 2pt;
+}
+
+.selected {
+  background: lightgreen;
+}
+
+</style>
+<script>
+function getData(type, url, callback) {
+  var xhr = new XMLHttpRequest();
+  xhr.addEventListener("load", function() {
+    callback(xhr);
+  });
+  xhr.responseType = type;
+  xhr.open("GET", url);
+  xhr.send();
+}
+</script>
+
+<script>
+  function formSubmitted(f) {
+    NodeList.prototype.forEach = Array.prototype.forEach; 
+    NodeList.prototype.map = Array.prototype.map;
+    document.querySelectorAll(".list ol").forEach((e) => e.innerHTML = "Loading...");
+
+    var path1 = f.path1.value;
+    getData("json", path1 + "/results.json", function(data1) {
+      document.querySelectorAll(".list ol").forEach((e) => e.innerHTML = "");
+      report(path1, data1.response);
+    });
+
+    return false;
+  }
+
+  function findTestInfo(id, testInfo) {
+    var t = testInfo.querySelector("test[id='"+id+"']");
+    return {
+      href: t.querySelector("test-href").innerHTML,
+      refHref: t.querySelector("reference-href").innerHTML,
+      flags: t.querySelectorAll("flag").map(e => e.innerHTML)
+    };
+  }
+
+  function safeEncode(str) {
+    return encodeURIComponent(encodeURIComponent(str));
+  }
+
+  function mkScreenshot(i) {
+    console.log(i);
+    return `<a title=${i.path} href=${"nightly-unstable/xhtml1/" + i.href}><img src=${i.path + "/screenshot/" + safeEncode(i.id) + ".png"} /></a>`;
+  }
+
+  function showDetails(imgs) {
+    var d = imgs.map(img => mkScreenshot(img)).join("");
+    document.getElementById("details").innerHTML = d;
+  }
+
+  function selectElem(e) {
+    var prior = document.querySelector(".selected");
+    if (prior) {
+      prior.classList.remove("selected");
+    }
+    e.classList.add("selected");
+  }
+
+  function report(path1, data) {
+    var dataRes = data["change-tests"].results;
+    dataRes.forEach(function(dr) {
+      console.log(dr);
+      var e = document.createElement("li");
+      e.innerHTML = dr.id;
+      e.onclick = () => {
+        showDetails([
+          {path: path1, id: dr.id},
+          {path: path1.substr("data/".length), id: dr.id}
+        ]);
+        selectElem(e);
+      }
+
+      document.getElementById(dr.change == "true" ? "changes" : "sames").appendChild(e);
+    });
+  }
+</script>
+
+<body>
+<div>
+<h1>Grinder reports</h1>
+<form onsubmit="return formSubmitted(this);">
+  <input type="text" name="path1" value="data/changeTests/" autofocus/>
+  <input type="submit" />
+</form>
+</div>
+
+<div class="list">
+ <h3>Changes</h3>
+ <ol id="changes"> </ol>
+</div>
+
+<div class="list">
+ <h3>Sames</h3>
+ <ol id="sames"> </ol>
+</div>
+
+<div class="list">
+ <h3>New</h3>
+ <ol id="new"> </ol>
+</div>
+
+<div id="details"> </div>
+
+</body>
+</html>

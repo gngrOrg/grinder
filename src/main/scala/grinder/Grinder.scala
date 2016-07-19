@@ -104,9 +104,11 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
           case _ => None
         }
 
-        baseLineResultOpt.foreach {blResult =>
-          if (blResult.pass != "true" && same) {
-            progressions += 1
+        if (same) {
+          baseLineResultOpt.foreach {blResult =>
+            if (blResult.pass != "true") {
+              progressions += 1
+            }
           }
         }
 

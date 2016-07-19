@@ -28,6 +28,10 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
       ResultParser.getResults(basePath)
     }
 
+  if (!baseLineResultsOpt.isDefined) {
+    println(Console.RED + Console.BOLD + "\nBase line not defined!!\n" + Console.RESET)
+  }
+
   private val imgUploadEnabled = options.isDefinedAt("uploadImg")
   private val quitOnRegression = options.isDefinedAt("quitOnRegress")
   private val hrefFilterOpt = options.get("hrefFilter")
@@ -107,7 +111,7 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
         }
 
         pb.step()
-        pb.setExtraMessage("Fails: " + fails + " Progressions: " + progressions)
+        pb.setExtraMessage("Fails: " + fails + (if (baseLineResultsOpt.isDefined) {" Progs: " + progressions } else ""))
 
         if (Pause.isPauseRequested) {
           timer.stop()
@@ -149,8 +153,9 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
       import jsonBackends.jawn._
       import formatters.humanReadable.jsonFormatterImplicit
 
-      println("Fails : " + fails)
-      println("Passes: " + passes)
+      println("Fails       : " + fails)
+      println("Passes      : " + passes)
+      println("Progressions: " + (if (baseLineResultsOpt.isDefined) ("" + progressions) else "N/A"))
 
       val json = json"""{
         "meta" : {

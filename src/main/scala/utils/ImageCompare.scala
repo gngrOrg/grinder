@@ -15,6 +15,8 @@ object GrinderUtil {
 
     if (!(testFile.exists() && refImageFile.exists())) {
       false
+    } else if (isFileContentSame(testFile, refImageFile)) {
+      true
     } else {
       val testImage = ImageIO.read(testFile)
       val referenceImage = ImageIO.read(refImageFile)
@@ -65,6 +67,34 @@ object GrinderUtil {
 
   private def hasEqualDimensions(testImage: BufferedImage, referenceImage: BufferedImage): Boolean = {
     testImage.getWidth == referenceImage.getWidth && testImage.getHeight == referenceImage.getHeight
+  }
+
+  import java.io.BufferedInputStream
+  import java.io.FileInputStream
+
+  private def isFileContentSame(file1: File, file2: File): Boolean = {
+    if(file1.length != file2.length){
+      false
+    } else {
+
+      val in1 =new BufferedInputStream(new FileInputStream(file1))
+      val in2 =new BufferedInputStream(new FileInputStream(file2))
+
+      var value1 = 0
+      do {
+         //since we're buffered read() isn't expensive
+         value1 = in1.read()
+         val value2 = in2.read()
+         if(value1 !=value2) {
+           return false
+         }
+      } while(value1 >=0)
+
+      in1.close()
+      in2.close()
+
+      true
+    }
   }
 
 }

@@ -82,7 +82,7 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
 
       driver.manage().timeouts().implicitlyWait(20, TimeUnit.SECONDS)
 
-      val pb = new ProgressBar("Test", selectedTests.length)
+      val pb = new ProgressBar("Test", selectedTests.length, 250)
       pb.start()
       timer.start()
       selectedTests.foreach { test =>

@@ -57,7 +57,11 @@ class ChangeChecker(args: Seq[String], options: Map[String, String]) {
     var results = Seq[ChangeTestResult]()
     val startDate = LocalDate.now()
 
-    val testCases = (resourceDir / "tests").collectChildren(c => (!c.isDirectory) && c.name.endsWith("html"))(File.VisitOptions.follow).toList
+    val testCases =
+      (resourceDir / "tests")
+      .collectChildren(c => (!c.isDirectory) && (c.name.endsWith("html") || c.name.endsWith("xht")))(File.VisitOptions.follow)
+      .toList
+
     val selectedTests = nameFilterOpt match {
       case Some(nameFilter) =>
         testCases.filter(_.name contains nameFilter)

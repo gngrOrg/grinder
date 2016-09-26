@@ -1,7 +1,6 @@
 package grinder
 
 import java.io.File
-import java.io.FileOutputStream
 import java.util.concurrent.TimeUnit
 import org.openqa.selenium.OutputType
 import org.openqa.selenium.firefox.FirefoxDriver
@@ -12,6 +11,7 @@ import java.time.format.DateTimeFormatter
 import org.openqa.selenium.WebDriverException
 import java.nio.file.FileSystems
 import java.nio.file.Paths
+import java.nio.file.Files
 
 case class TestResult(id: String, pass: Boolean)
 
@@ -56,7 +56,7 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
 
   def run() {
     val imageDirectoryPath = FileSystems.getDefault().getPath(imageDirectory)
-    java.nio.file.Files.createDirectories(imageDirectoryPath)
+    Files.createDirectories(imageDirectoryPath)
 
     Pause.init()
 
@@ -212,13 +212,8 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
   private def enc(s: String) = java.net.URLEncoder.encode(s, "UTF-8")
 
   private def takeScreenShot(name: String) {
-    val bytes = driver.getScreenshotAs(OutputType.BYTES)
+    val bytes:Array[Byte] = driver.getScreenshotAs(OutputType.BYTES)
     val fileName = imageDirectory + "/" + name + ".png"
-    val fos = new FileOutputStream(fileName)
-    try {
-      fos.write(bytes)
-    } finally {
-      fos.close()
-    }
+    FileUtils.writeFile(fileName, bytes)
   }
 }

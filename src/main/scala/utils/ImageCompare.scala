@@ -8,6 +8,7 @@ import javax.imageio.ImageIO
 object GrinderUtil {
   private val FAILURE_THRESHOLD = 25
   private val COMPARISION_THRESHOLD = 10
+  private val ROWS_PER_BATCH = 50
 
   def isScreenShotSame(testFile: File, refImageFile: File, failureScale: Double = 1d): Boolean = {
     val scaledFailureThreshold = FAILURE_THRESHOLD * failureScale
@@ -22,14 +23,24 @@ object GrinderUtil {
       val referenceImage = ImageIO.read(refImageFile)
 
       if (hasEqualDimensions(testImage, referenceImage)) {
-        var failures = 0
-        var h = 0
         val width = testImage.getWidth
         val height = testImage.getHeight
+        val testRGBArray = new Array[Int](width * ROWS_PER_BATCH)
+        val refRGBArray = new Array[Int](width * ROWS_PER_BATCH)
+        var failures = 0
+        var h = 0
+        var batchStart = 0
         while (h < height && failures < scaledFailureThreshold) {
+          if (h % ROWS_PER_BATCH == 0) {
+            batchStart = h
+            val batchHeight = Math.min(height-batchStart, ROWS_PER_BATCH)
+            testImage.getRGB(0, batchStart, width, batchHeight, testRGBArray, 0, width)
+            referenceImage.getRGB(0, batchStart, width, batchHeight, refRGBArray, 0, width)
+          }
+          val offset = (h - batchStart) * width
           var w = 0
-          while (w < width && failures < scaledFailureThreshold) {
-            val same = isPixelSimilar(testImage.getRGB(w, h), referenceImage.getRGB(w, h))
+          while (w < width) {
+            val same = isPixelSimilar(testRGBArray(w + offset), refRGBArray(w + offset))
             if (!same) {
               failures += 1
             }

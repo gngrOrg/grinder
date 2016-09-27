@@ -12,7 +12,6 @@ object GrinderUtil {
 
   def isScreenShotSame(testFile: File, refImageFile: File, failureScale: Double = 1d): Boolean = {
     val scaledFailureThreshold = FAILURE_THRESHOLD * failureScale
-    val referenceImage = ImageIO.read(refImageFile)
 
     if (!(testFile.exists() && refImageFile.exists())) {
       false

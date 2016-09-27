@@ -106,7 +106,7 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
 
         if (same) {
           baseLineResultOpt.foreach {blResult =>
-            if (blResult.pass != "true") {
+            if (!blResult.pass) {
               progressions += 1
             }
           }
@@ -186,7 +186,7 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
 
     def isStopRequired(result: TestResult, baseLineResultOpt: Option[ResultParser.TestResult]): Boolean = {
       !result.pass && ({
-        val regression = baseLineResultOpt.map(b => b.pass == "true").getOrElse(false)
+        val regression = baseLineResultOpt.map(b => b.pass).getOrElse(false)
         if (regression) {
           println("\nFound regression: " + result.id)
         }

@@ -5,7 +5,7 @@ import collection.JavaConversions._
 import collection.JavaConverters._
 
 object ResultParser {
-  case class TestResult(pass: String, id: String)
+  case class TestResult(pass: Boolean, id: String)
 
   import rapture.json._
   import jsonBackends.jawn._

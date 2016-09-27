@@ -54,7 +54,11 @@ class GngrDriver(authKey: String) extends WebDriver with TakesScreenshot {
     def getPosition(): org.openqa.selenium.Point = ???
     def getSize(): org.openqa.selenium.Dimension = ???
     def maximize() {
+      ???
+    }
 
+    def fullscreen() {
+      ???
     }
 
     def setPosition(x$1: org.openqa.selenium.Point): Unit = ???

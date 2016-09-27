@@ -139,7 +139,7 @@ function getData(type, url, callback) {
         selectElem(e);
       }
 
-      document.getElementById(dr.change == "true" ? "changes" : "sames").appendChild(e);
+      document.getElementById(dr.change ? "changes" : "sames").appendChild(e);
     });
   }
 </script>

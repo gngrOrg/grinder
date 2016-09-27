@@ -175,7 +175,7 @@ function getData(type, url, callback) {
         selectElem(e);
       }
 
-      document.getElementById(dr.pass == "true" ? "passes" : "fails").appendChild(e);
+      document.getElementById(dr.pass ? "passes" : "fails").appendChild(e);
 
       var br = baseline["css21-reftests"].results.find((b) => b.id == dr.id);
       if (br) {
@@ -192,11 +192,11 @@ function getData(type, url, callback) {
             ], getNote(info));
             selectElem(e2);
           }
-          document.getElementById(br.pass == "true" ? "regressions" : "progressions").appendChild(e2);
+          document.getElementById(br.pass ? "regressions" : "progressions").appendChild(e2);
         }
       } else {
         var newTest = document.createElement("li");
-        newTest.innerHTML = dr.id + '[' + (dr.pass == 'true' ? "Pass" : "Fail") + ']';
+        newTest.innerHTML = dr.id + '[' + (dr.pass ? "Pass" : "Fail") + ']';
         addClasses(newTest, dr.id);
         newTest.onclick = () => {
           showDetails([

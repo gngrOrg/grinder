@@ -23,8 +23,13 @@ object ImgUpload {
     val client = HttpClientBuilder.create().build()
     val response = client.execute(post)
 
-    val responseXML = xml.XML.load(response.getEntity.getContent)
-    println(responseXML \ "original_image")
-    println(responseXML \ "imgur_page")
+    try {
+      val responseXML = xml.XML.load(response.getEntity.getContent)
+      println(responseXML \ "original_image")
+      println(responseXML \ "imgur_page")
+    } catch {
+      case e:org.xml.sax.SAXParseException =>
+        println("Exception while parsing result of upload")
+    }
   }
 }

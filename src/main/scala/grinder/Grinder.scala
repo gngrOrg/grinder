@@ -69,12 +69,13 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
 
     val parser = new TestXmlParser()
     val testCases = parser.parserTests
-    val selectedTests = hrefFilterOpt match {
+    val filteredTests = hrefFilterOpt match {
       case Some(hrefFilter) =>
         testCases.filter(_.testHref contains hrefFilter)
       case None =>
         testCases
       }
+    val selectedTests = Jumbler.jumbledUp(filteredTests, 0)
 
     try {
       // driver.manage().window().maximize()
@@ -169,7 +170,7 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
           "totalCount" : ${testCases.length},
           "selectedCount" : ${selectedTests.length},
           "results": ${
-            results.map(r => json"""{
+            results.sortBy(_.id).reverse.map(r => json"""{
               "id": ${r.id},
               "pass": ${r.pass}
             }""")

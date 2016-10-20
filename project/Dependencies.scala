@@ -9,7 +9,7 @@ object Dependencies {
       "com.propensive" %% "rapture-json-jawn" % "2.0.0-M7",
       "org.seleniumhq.selenium" % "selenium-java" % "2.53.1" intransitive(),
       "org.seleniumhq.selenium" % "selenium-firefox-driver" % "2.53.1",
-      "me.tongfei" % "progressbar" % "0.4.1",
+      "me.tongfei" % "progressbar" % "0.4.3",
       "org.scalatest" % "scalatest_2.11" % "3.0.0",
       "org.scala-lang.modules" %% "scala-xml" % "1.0.6",
       "com.github.pathikrit" %% "better-files" % "2.16.0",

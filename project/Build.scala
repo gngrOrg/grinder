@@ -11,7 +11,7 @@ object Build extends Build {
     // (testOptions in Test) +=Tests.Argument(TestFrameworks.ScalaTest, "-h", "target/test-reports"),
     resolvers += Resolver.sonatypeRepo("releases"),
     libraryDependencies ++= dependencies(),
-    scalacOptions ++= Seq("-optimise", "-Yclosure-elim", "-Yinline", "-Ybackend:GenBCode")
+    scalacOptions ++= Seq("-optimise")
   )
 }
 

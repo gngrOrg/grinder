@@ -7,7 +7,7 @@ case class TestCase(testTitle: String, testHref: String, refrenceValue: String, 
 
 class CssReftestXmlParser {
 
-  val UNSUPPORTED_FLAGS = List("Interact","Paged")
+  val UNSUPPORTED_FLAGS = List("interact","paged", "dom", "dom/js")
 
   private implicit def node2Convenience(n:xml.Node) = new {
     def attrib(key: String):String = {
@@ -37,7 +37,7 @@ class CssReftestXmlParser {
       val flagTitle = (td2 \\ "abbr").map(node => node.attrib("title")).mkString(" ")
       val flagValue = (td2 \\ "abbr").map(node => node.head.text).mkString(" ")
 
-      TestCase(testTitle, testHref, refrenceValue, refrenceHref, flagTitle, flagValue.split("\\s+").filter(_.length > 0))
+      TestCase(testTitle, testHref, refrenceValue, refrenceHref, flagTitle, flagValue.split("\\s+").filter(_.length > 0).map(_.toLowerCase))
     }).filterNot(hasUnsupportedFlag)
 
     println("Supported test cases: " + testCases.length)

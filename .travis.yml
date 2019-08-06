@@ -1,5 +1,3 @@
-sudo: false
 language: scala
-jdk: oraclejdk8
 script: "sbt test"
 

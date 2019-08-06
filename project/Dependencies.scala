@@ -9,13 +9,13 @@ object Dependencies {
       "com.propensive" %% "rapture-json-jawn" % "2.0.0-M8",
       "org.seleniumhq.selenium" % "selenium-java" % "2.53.1" intransitive(),
       "org.seleniumhq.selenium" % "selenium-firefox-driver" % "2.53.1",
-      "me.tongfei" % "progressbar" % "0.6.0",
-      "org.scalatest" %% "scalatest" % "3.0.5",
-      "org.scala-lang.modules" %% "scala-xml" % "1.1.1",
-      "com.github.pathikrit" %% "better-files" % "3.7.0",
+      "me.tongfei" % "progressbar" % "0.7.4",
+      "org.scalatest" %% "scalatest" % "3.0.8",
+      "org.scala-lang.modules" %% "scala-xml" % "1.2.0",
+      "com.github.pathikrit" %% "better-files" % "3.8.0",
 
       // Added for imgur upload, could be removed later
-      "org.apache.httpcomponents" % "httpmime" % "4.5.7"
+      "org.apache.httpcomponents" % "httpmime" % "4.5.9"
     )
   }
 }

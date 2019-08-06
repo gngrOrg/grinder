@@ -84,7 +84,7 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
       driver.manage().timeouts().implicitlyWait(20, TimeUnit.SECONDS)
 
       val pb = new ProgressBar("Test", selectedTests.length, 250)
-      pb.start()
+      // pb.start()
       timer.start()
       selectedTests.foreach { test =>
         val testHref = new File(s"$imageDirectory/${enc(test.testHref)}.png")

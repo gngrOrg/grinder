@@ -49,6 +49,7 @@ form { display: inline-block}
   margin: .3em 0;
   border: 1px solid grey;
   padding: .3em;
+  background: lightsalmon;
 }
 
 #details img {
@@ -117,7 +118,7 @@ function getData(type, url, callback) {
   }
 
   function mkScreenshot(i) {
-    return `<a title=${i.path + i.href} href=${"nightly-unstable/xhtml1/" + i.href}><img src=${i.path + "/screenshot/" + safeEncode(i.href) + ".png"} /></a>`;
+    return `<a target="_blank" title=${i.path + i.href} href=${"nightly-unstable/xhtml1/" + i.href}><img src=${i.path + "/screenshot/" + safeEncode(i.href) + ".png"} /></a>`;
   }
 
   function showDetails(imgs, note) {

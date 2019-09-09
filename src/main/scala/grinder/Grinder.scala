@@ -64,6 +64,7 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
     var passes = 0
     var fails = 0
     var progressions = 0
+    var regressions = 0
     var results = Seq[TestResult]()
     val startDate = LocalDate.now()
 
@@ -99,17 +100,18 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
         } else {
           fails += 1
         }
+
         val baseLineResultOpt = baseLineResultsOpt match {
           case Some(baseLineResults) =>
             baseLineResults.find(_.id == result.id)
           case _ => None
         }
 
-        if (same) {
-          baseLineResultOpt.foreach {blResult =>
-            if (!blResult.pass) {
-              progressions += 1
-            }
+        baseLineResultOpt.foreach {blResult =>
+          if (same) {
+            if(!blResult.pass) { progressions += 1 }
+          } else {
+            if(blResult.pass) { regressions += 1 }
           }
         }
 
@@ -159,6 +161,7 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
       println("Fails       : " + fails)
       println("Passes      : " + passes)
       println("Progressions: " + (if (baseLineResultsOpt.isDefined) ("" + progressions) else "N/A"))
+      println("Regressions : " + (if (baseLineResultsOpt.isDefined) ("" + regressions) else "N/A"))
 
       val json = json"""{
         "meta" : {

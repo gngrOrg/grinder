@@ -2,9 +2,10 @@ package grinder
 
 import java.io.File
 
-import org.scalatest.{ Matchers, FunSpec }
+import org.scalatest.funspec._
+import org.scalatest.matchers.should._
 
-class GrinderTest extends FunSpec with Matchers {
+class GrinderTest extends AnyFunSpec with Matchers {
 
   describe("Image Comparison") {
 

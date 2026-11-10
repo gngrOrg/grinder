@@ -24,6 +24,8 @@ object Boot extends App {
         val (argsRem, optionsMap) = separateArgsOptions(args.tail)
         val inputDir = optionsMap.get("inputDir")
           .orElse(optionsMap.get("input-dir"))
+          .map(_.trim)
+          .filter(_.nonEmpty)
           .orElse(argsRem.headOption)
           .getOrElse("nightly-unstable")
         prepare(inputDir)
@@ -60,8 +62,8 @@ object Boot extends App {
   }
 
   def compare() {
-    if (args.length > 1) {
-      val (argsRem, optionsMap) = separateArgsOptions(args.tail)
+    val (argsRem, optionsMap) = separateArgsOptions(args.tail)
+    if (argsRem.nonEmpty) {
       val cssTest = new Grinder(argsRem, optionsMap)
       cssTest.run()
       println("Run finished!")
@@ -71,8 +73,8 @@ object Boot extends App {
   }
 
   def checkChange() {
-    if (args.length > 1) {
-      val (argsRem, optionsMap) = separateArgsOptions(args.tail)
+    val (argsRem, optionsMap) = separateArgsOptions(args.tail)
+    if (argsRem.nonEmpty) {
       val changeTestChecker = new ChangeChecker(argsRem, optionsMap)
       changeTestChecker.run()
       println("Run finished!")
@@ -82,9 +84,9 @@ object Boot extends App {
   }
 
   def benchmark() {
-    if (args.length > 1) {
-      val (argsRem, optionsMap) = separateArgsOptions(args.tail)
-      val keyOpt = optionsMap.get("key")
+    val (argsRem, optionsMap) = separateArgsOptions(args.tail)
+    if (argsRem.nonEmpty) {
+      val keyOpt = optionsMap.get("key").map(_.trim).filter(_.nonEmpty)
       val profileDirOpt = GngrDriver.extractProfileDir(optionsMap)
       keyOpt match {
         case Some(key) =>
@@ -109,14 +111,28 @@ object Boot extends App {
     }
   }
 
-  private def separateArgsOptions(args: Array[String]) = {
+  private[grinder] def separateArgsOptions(args: Array[String]): (Seq[String], Map[String, String]) = {
     val (optionsStr, argsRem) = args.partition(_.startsWith("--"))
-    val options = optionsStr.map{os =>
-      val firstTwoFields = os.substring(2).split('=').filter(_.length > 0).take(2)
-      (firstTwoFields(0), firstTwoFields(1))
+    val options = optionsStr.flatMap { os =>
+      val raw = os.stripPrefix("--")
+      val eqIdx = raw.indexOf('=')
+      if (eqIdx != -1) {
+        val key = raw.substring(0, eqIdx).trim
+        val value = raw.substring(eqIdx + 1).trim
+        if (key.nonEmpty) Some(key -> unquote(value)) else None
+      } else {
+        val key = raw.trim
+        if (key.nonEmpty) Some(key -> "") else None
+      }
     }
     val optionsMap = options.toMap
-    (argsRem, optionsMap)
+    (argsRem.toSeq, optionsMap)
+  }
+
+  private def unquote(s: String): String = {
+    if ((s.startsWith("\"") && s.endsWith("\"")) || (s.startsWith("'") && s.endsWith("'"))) {
+      if (s.length >= 2) s.substring(1, s.length - 1) else s
+    } else s
   }
 
 }

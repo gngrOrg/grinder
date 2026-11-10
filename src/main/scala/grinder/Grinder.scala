@@ -34,15 +34,19 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
 
   private val imgUploadEnabled = options.isDefinedAt("uploadImg")
   private val quitOnRegression = options.isDefinedAt("quitOnRegress")
-  private val hrefFilterOpt = options.get("hrefFilter")
-  private val failureScale = options.get("failureScale").map(java.lang.Double.parseDouble(_)).getOrElse(1d)
+  private val hrefFilterOpt = options.get("hrefFilter").map(_.trim).filter(_.nonEmpty)
+  private val failureScale = options.get("failureScale")
+    .map(_.trim)
+    .filter(_.nonEmpty)
+    .flatMap(s => scala.util.Try(java.lang.Double.parseDouble(s)).toOption)
+    .getOrElse(1d)
   val profileDirOpt = GngrDriver.extractProfileDir(options)
 
   val browserName = args(0)
 
   lazy val driver = browserName match {
     case "gngr" => {
-      val keyOpt = if (args.length > 1) Some(args(1)) else options.get("key")
+      val keyOpt = (if (args.length > 1) Some(args(1)) else options.get("key")).map(_.trim).filter(_.nonEmpty)
       keyOpt match {
         case Some(key) => new GngrDriver(key, profileDirOpt)
         case None => throw new InvalidConfigurationException("Please specify the key")

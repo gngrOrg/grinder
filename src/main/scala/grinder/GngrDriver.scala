@@ -265,11 +265,14 @@ object GngrDriver {
 
   def extractProfileDir(options: Map[String, String]): Option[File] = {
     options.get("profileDir")
-      .orElse(options.get("profile-dir"))
-      .orElse(options.get("profile_dir"))
+      .map(_.trim)
+      .filter(_.nonEmpty)
       .map(p => resolveProfileDir(p, isProfileNameOnly = false))
       .orElse {
-        options.get("profile").map(p => resolveProfileDir(p, isProfileNameOnly = true))
+        options.get("profile")
+          .map(_.trim)
+          .filter(_.nonEmpty)
+          .map(p => resolveProfileDir(p, isProfileNameOnly = true))
       }
   }
 }

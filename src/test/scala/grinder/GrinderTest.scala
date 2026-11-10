@@ -104,18 +104,25 @@ class GrinderTest extends AnyFunSpec with Matchers {
       val opts1 = Map("profileDir" -> "/tmp/p1")
       GngrDriver.extractProfileDir(opts1) should be(Some(new File("/tmp/p1")))
 
-      val opts2 = Map("profile-dir" -> "/tmp/p2")
-      GngrDriver.extractProfileDir(opts2) should be(Some(new File("/tmp/p2")))
-
-      val opts3 = Map("profile" -> "my-profile")
+      val opts2 = Map("profile" -> "my-profile")
       val userHome = System.getProperty("user.home")
       val expectedUnderGngr = new File(new File(userHome, ".gngr"), "my-profile")
-      GngrDriver.extractProfileDir(opts3) should be(Some(expectedUnderGngr))
+      GngrDriver.extractProfileDir(opts2) should be(Some(expectedUnderGngr))
+    }
+
+    it("should return None when profileDir or profile is empty or whitespace") {
+      GngrDriver.extractProfileDir(Map("profileDir" -> "")) should be(None)
+      GngrDriver.extractProfileDir(Map("profileDir" -> "   ")) should be(None)
+      GngrDriver.extractProfileDir(Map("profile" -> "")) should be(None)
+      GngrDriver.extractProfileDir(Map("profile" -> "  ")) should be(None)
     }
 
     it("should populate profileDirOpt in Grinder") {
       val grinder = new Grinder(Seq("gngr", "test-key"), Map("profileDir" -> "/tmp/custom-profile"))
       grinder.profileDirOpt should be(Some(new File("/tmp/custom-profile")))
+
+      val grinderEmpty = new Grinder(Seq("gngr", "test-key"), Map("profileDir" -> ""))
+      grinderEmpty.profileDirOpt should be(None)
     }
 
     it("should fail with clear path when port.dat is missing in custom profile directory") {
@@ -129,6 +136,40 @@ class GrinderTest extends AnyFunSpec with Matchers {
       } finally {
         tempDir.delete()
       }
+    }
+  }
+
+  describe("CLI Option Parsing") {
+    it("should parse normal options and remaining arguments") {
+      val (argsRem, options) = Boot.separateArgsOptions(Array("gngr", "key123", "--profileDir=/tmp/profile"))
+      argsRem should be(Seq("gngr", "key123"))
+      options should be(Map("profileDir" -> "/tmp/profile"))
+    }
+
+    it("should handle ill-specified options without throwing exceptions") {
+      val (argsRem1, opts1) = Boot.separateArgsOptions(Array("--profileDir="))
+      argsRem1 should be(empty)
+      opts1 should be(Map("profileDir" -> ""))
+
+      val (argsRem2, opts2) = Boot.separateArgsOptions(Array("--anotherOption="))
+      argsRem2 should be(empty)
+      opts2 should be(Map("anotherOption" -> ""))
+
+      val (argsRem3, opts3) = Boot.separateArgsOptions(Array("--uploadImg", "--quitOnRegress"))
+      argsRem3 should be(empty)
+      opts3 should be(Map("uploadImg" -> "", "quitOnRegress" -> ""))
+
+      val (argsRem4, opts4) = Boot.separateArgsOptions(Array("--", "--=", "--=val", "--key=val=extra"))
+      argsRem4 should be(empty)
+      opts4 should be(Map("key" -> "val=extra"))
+    }
+
+    it("should handle unquoting option values") {
+      val (_, opts1) = Boot.separateArgsOptions(Array("--profileDir=\"/path/with quotes\""))
+      opts1 should be(Map("profileDir" -> "/path/with quotes"))
+
+      val (_, opts2) = Boot.separateArgsOptions(Array("--key=''"))
+      opts2 should be(Map("key" -> ""))
     }
   }
 

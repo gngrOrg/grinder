@@ -49,7 +49,9 @@ import java.security.MessageDigest
 import java.util.Base64
 import org.openqa.selenium.Dimension
 
-class GngrDriver(authKey: String) extends WebDriver with TakesScreenshot {
+class GngrDriver(authKey: String, val profileDir: Option[File] = None) extends WebDriver with TakesScreenshot {
+  def this(authKey: String, profileDir: File) = this(authKey, Some(profileDir))
+
   private val gngrWindow = new Window {
     def getPosition(): org.openqa.selenium.Point = ???
     def getSize(): org.openqa.selenium.Dimension = ???
@@ -90,12 +92,14 @@ class GngrDriver(authKey: String) extends WebDriver with TakesScreenshot {
   private val grinderPort = getGrinderPort
 
   private def getGngrPort = {
-    val userHome = System.getProperty("user.home")
-    val appHome = new File(userHome, ".gngr")
-    val profileHome = new File(appHome, "default")
+    val profileHome = profileDir.getOrElse {
+      val userHome = System.getProperty("user.home")
+      val appHome = new File(userHome, ".gngr")
+      new File(appHome, "default")
+    }
     val portFile = new File(profileHome, "port.dat")
     if (!portFile.exists()) {
-      throw new InvalidConfigurationException("Port file not found. `gngr` is probably not running")
+      throw new InvalidConfigurationException(s"Port file not found at ${portFile.getAbsolutePath}. `gngr` is probably not running")
     }
 
     val in = new FileInputStream(portFile)
@@ -238,3 +242,35 @@ class GngrDriver(authKey: String) extends WebDriver with TakesScreenshot {
     buffer.toByteArray()
   }
 }
+
+object GngrDriver {
+  def resolveProfileDir(path: String, isProfileNameOnly: Boolean = false): File = {
+    val userHome = System.getProperty("user.home")
+    val appHome = new File(userHome, ".gngr")
+    if (path.startsWith("~/")) {
+      new File(userHome, path.substring(2))
+    } else {
+      val f = new File(path)
+      if (f.isAbsolute) {
+        f
+      } else if (isProfileNameOnly) {
+        val inAppHome = new File(appHome, path)
+        if (inAppHome.exists() || !f.exists()) inAppHome
+        else f.getAbsoluteFile
+      } else {
+        f.getAbsoluteFile
+      }
+    }
+  }
+
+  def extractProfileDir(options: Map[String, String]): Option[File] = {
+    options.get("profileDir")
+      .orElse(options.get("profile-dir"))
+      .orElse(options.get("profile_dir"))
+      .map(p => resolveProfileDir(p, isProfileNameOnly = false))
+      .orElse {
+        options.get("profile").map(p => resolveProfileDir(p, isProfileNameOnly = true))
+      }
+  }
+}
+

@@ -12,15 +12,21 @@ object Boot extends App {
 
   if (args.length < 1) {
     println("Please provide a command:")
-    println("  prepare")
-    println("  compare <browserName>")
+    println("  prepare [inputDir]")
+    println("  compare <browserName> [key] [--profileDir=<path>]")
     System.exit(1)
   }
 
   private val command = args(0)
   try {
     command match {
-      case "prepare" => prepare()
+      case "prepare" =>
+        val (argsRem, optionsMap) = separateArgsOptions(args.tail)
+        val inputDir = optionsMap.get("inputDir")
+          .orElse(optionsMap.get("input-dir"))
+          .orElse(argsRem.headOption)
+          .getOrElse("nightly-unstable")
+        prepare(inputDir)
       case "compare" => compare()
       case "checkChange" => checkChange()
       case "updateBase" => UpdateBaseLine.update(args.tail)
@@ -31,9 +37,15 @@ object Boot extends App {
     case te: TestException => println(te.summary)
   }
 
-  def prepare() {
+  def prepare(inputDir: String = "nightly-unstable") {
     val parser = new CssReftestXmlParser
-    val xmlFile = new File(s"$UserDir/nightly-unstable/xhtml1/reftest-toc.xht")
+    val baseDir = new File(inputDir)
+    val resolvedDir = if (baseDir.isAbsolute) baseDir else new File(UserDir, inputDir)
+    val xmlFile = if (new File(resolvedDir, "reftest-toc.xht").exists()) {
+      new File(resolvedDir, "reftest-toc.xht")
+    } else {
+      new File(resolvedDir, "xhtml1/reftest-toc.xht")
+    }
 
     println(xmlFile.getAbsolutePath)
 
@@ -73,9 +85,10 @@ object Boot extends App {
     if (args.length > 1) {
       val (argsRem, optionsMap) = separateArgsOptions(args.tail)
       val keyOpt = optionsMap.get("key")
+      val profileDirOpt = GngrDriver.extractProfileDir(optionsMap)
       keyOpt match {
         case Some(key) =>
-          val driver = new GngrDriver(key)
+          val driver = new GngrDriver(key, profileDirOpt)
           val repeatCount = 6
           var totalElapsedTime = 0L
           for (i <- 0 until repeatCount) {

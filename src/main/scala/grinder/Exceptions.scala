@@ -24,11 +24,11 @@ trait TestException extends Exception {
   def summary: String
 }
 
-class InvalidConfigurationException(cause: String) extends TestException {
+class InvalidConfigurationException(cause: String) extends Exception(cause) with TestException {
   def summary = "Invalid config: " + cause
 }
 
-class InvalidStateException(cause: String) extends TestException {
+class InvalidStateException(cause: String) extends Exception(cause) with TestException {
   def summary = "Invalid state: " + cause
 }
 

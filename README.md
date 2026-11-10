@@ -23,10 +23,10 @@ On `gngr` side, we are implementing a subset of the WebDriver protocol and will 
 ## Preparing the tests
 
 ```
-sbt run prepare
+sbt run prepare [inputDir]
 ```
 
-This will parse and filter the tests from the css2.1 reference TOC. The details of the filtered tests are then
+This will parse and filter the tests from the css2.1 reference TOC (default input directory is `nightly-unstable`). The details of the filtered tests are then
 stored in `data/test-cases.xml`.
 
 
@@ -43,6 +43,8 @@ This will open a new browser window, navigate to the tests and their references,
 When running with `gngr`, you need to set it up first:
    * Start `gngr` with the `-grinder-key=xyz` flag (substitute `xyz` with any key of your choice).
    * Provide the same key to the grinder run. For example: `sbt run compare gngr xyz`
+   * Optionally specify the profile directory with `--profileDir=<path>` (or `--profile=<name>`). For example: `sbt "run compare gngr xyz --profileDir=/path/to/profile"`
+
 
 ## Pausing the tests
 

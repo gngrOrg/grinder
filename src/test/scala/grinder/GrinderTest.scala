@@ -48,4 +48,88 @@ class GrinderTest extends AnyFunSpec with Matchers {
 
   }
 
+  describe("Prepare Command") {
+    it("should accept an input directory parameter and parse test cases") {
+      val tempDir = java.nio.file.Files.createTempDirectory("grinder-test-prepare").toFile
+      try {
+        val xhtmlDir = new File(tempDir, "xhtml1")
+        xhtmlDir.mkdirs()
+        val sampleToc =
+          <html xmlns="http://www.w3.org/1999/xhtml">
+            <body>
+              <table>
+                <tbody>
+                  <tr>
+                    <td title="Test 1"><a href="test1.xht">Test 1</a></td>
+                    <td><a href="test1-ref.xht">=</a></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+            </body>
+          </html>
+        scala.xml.XML.save(new File(xhtmlDir, "reftest-toc.xht").getAbsolutePath, sampleToc, enc = "utf-8")
+
+        Boot.prepare(tempDir.getAbsolutePath)
+
+        val outputFile = new File(s"${Boot.UserDir}/data/test-cases.xml")
+        outputFile.exists() should be(true)
+        val loaded = scala.xml.XML.loadFile(outputFile)
+        (loaded \\ "test").length should be(1)
+        (loaded \\ "test" \ "test-title").text should be("Test 1")
+      } finally {
+        def deleteRecursively(f: File): Unit = {
+          if (f.isDirectory) f.listFiles().foreach(deleteRecursively)
+          f.delete()
+        }
+        deleteRecursively(tempDir)
+      }
+    }
+  }
+
+  describe("Gngr Profile Directory") {
+    it("should resolve absolute profile directory") {
+      val absDir = new File("/tmp/custom-gngr-profile")
+      val resolved = GngrDriver.resolveProfileDir(absDir.getAbsolutePath)
+      resolved should be(absDir)
+    }
+
+    it("should resolve tilde path relative to user home") {
+      val userHome = System.getProperty("user.home")
+      val resolved = GngrDriver.resolveProfileDir("~/custom-profile")
+      resolved should be(new File(userHome, "custom-profile"))
+    }
+
+    it("should extract profileDir option") {
+      val opts1 = Map("profileDir" -> "/tmp/p1")
+      GngrDriver.extractProfileDir(opts1) should be(Some(new File("/tmp/p1")))
+
+      val opts2 = Map("profile-dir" -> "/tmp/p2")
+      GngrDriver.extractProfileDir(opts2) should be(Some(new File("/tmp/p2")))
+
+      val opts3 = Map("profile" -> "my-profile")
+      val userHome = System.getProperty("user.home")
+      val expectedUnderGngr = new File(new File(userHome, ".gngr"), "my-profile")
+      GngrDriver.extractProfileDir(opts3) should be(Some(expectedUnderGngr))
+    }
+
+    it("should populate profileDirOpt in Grinder") {
+      val grinder = new Grinder(Seq("gngr", "test-key"), Map("profileDir" -> "/tmp/custom-profile"))
+      grinder.profileDirOpt should be(Some(new File("/tmp/custom-profile")))
+    }
+
+    it("should fail with clear path when port.dat is missing in custom profile directory") {
+      val tempDir = java.nio.file.Files.createTempDirectory("grinder-custom-profile").toFile
+      try {
+        val ex = intercept[InvalidConfigurationException] {
+          new GngrDriver("test-key", tempDir)
+        }
+        ex.getMessage should include(tempDir.getAbsolutePath)
+        ex.getMessage should include("port.dat")
+      } finally {
+        tempDir.delete()
+      }
+    }
+  }
+
 }

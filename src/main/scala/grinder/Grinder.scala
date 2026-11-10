@@ -36,15 +36,16 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
   private val quitOnRegression = options.isDefinedAt("quitOnRegress")
   private val hrefFilterOpt = options.get("hrefFilter")
   private val failureScale = options.get("failureScale").map(java.lang.Double.parseDouble(_)).getOrElse(1d)
+  val profileDirOpt = GngrDriver.extractProfileDir(options)
 
   val browserName = args(0)
 
   lazy val driver = browserName match {
     case "gngr" => {
-      if (args.length > 1) {
-        new GngrDriver(args(1))
-      } else {
-        throw new InvalidConfigurationException("Please specify the key")
+      val keyOpt = if (args.length > 1) Some(args(1)) else options.get("key")
+      keyOpt match {
+        case Some(key) => new GngrDriver(key, profileDirOpt)
+        case None => throw new InvalidConfigurationException("Please specify the key")
       }
     }
     case "firefox" => new FirefoxDriver()

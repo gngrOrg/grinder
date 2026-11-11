@@ -1,4 +1,4 @@
-# grinder
+# grinder [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/gngrOrg/grinder)
 an apparatus to test [gngr](https://github.com/UprootLabs/gngr).
 
 ## Status
@@ -44,6 +44,7 @@ When running with `gngr`, you need to set it up first:
    * Start `gngr` with the `-grinder-key=xyz` flag (substitute `xyz` with any key of your choice).
    * Provide the same key to the grinder run. For example: `sbt run compare gngr xyz`
    * Optionally specify the profile directory with `--profileDir=<path>` (or `--profile=<name>`). For example: `sbt "run compare gngr xyz --profileDir=/path/to/profile"`
+   * Optionally specify the report output directory with `--reportDir=<path>`. Default is `$PWD/grinder-report/`. A timestamped folder will be created inside with `report.html`, `reportChanges.html`, `results.json`, and the `screenshots/` directory. For example: `sbt "run compare gngr xyz --reportDir=/path/to/artifacts"`
 
 
 ## Pausing the tests

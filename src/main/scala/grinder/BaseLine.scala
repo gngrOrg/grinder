@@ -20,10 +20,12 @@ class BaseLine(newPathStr: String, basePathStr: String) {
   val regressions = newFailed.filterNot(n => baseFailed.contains(n))
 
   def resolveNewScreenshot(id: String) = {
-    newPath.resolve("screenshot").resolve(id + ".png")
+    val s1 = newPath.resolve("screenshots").resolve(id + ".png")
+    if (Files.exists(s1)) s1 else newPath.resolve("screenshot").resolve(id + ".png")
   }
 
   def resolveBaseScreenshot(id: String) = {
-    basePath.resolve("screenshot").resolve(id + ".png")
+    val s1 = basePath.resolve("screenshots").resolve(id + ".png")
+    if (Files.exists(s1)) s1 else basePath.resolve("screenshot").resolve(id + ".png")
   }
 }

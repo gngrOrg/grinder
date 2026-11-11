@@ -18,8 +18,12 @@ case class TestResult(id: String, pass: Boolean)
 class Grinder(args: Seq[String], options: Map[String, String]) {
   private val resourceDir: String = s"${grinder.Boot.UserDir}/nightly-unstable"
   private val referenceDirectory = s"localhost:8000//nightly-unstable/xhtml1"
-  private val imageDirectory: String = s"${grinder.Boot.UserDir}/data/screenshot"
-  private val resultDirectory: String = s"${grinder.Boot.UserDir}/data/"
+
+  val reportBaseDir: java.nio.file.Path = ReportConfig.resolveReportBaseDir(options)
+  lazy val reportRunPaths: ReportPaths = ReportConfig.createRunPaths(reportBaseDir)
+
+  private def imageDirectory: String = reportRunPaths.screenshotsDir.toString
+  private def resultDirectory: String = reportRunPaths.runDir.toString
 
   private val baseLineResultsOpt =
     options.get("baseLine").map{p =>
@@ -60,7 +64,10 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
   }
 
   def run() {
-    val imageDirectoryPath = FileSystems.getDefault().getPath(imageDirectory)
+    val runPaths = reportRunPaths
+    println(s"Reports and screenshots will be written to: ${runPaths.runDir}")
+
+    val imageDirectoryPath = runPaths.screenshotsDir
     Files.createDirectories(imageDirectoryPath)
 
     Pause.init()
@@ -185,11 +192,21 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
           }
         }
       }"""
+      val jsonFormatted = Json.format(json)
       val fw = new java.io.FileWriter(resultDirectory + "/results.json")
       try {
-        fw.write(Json.format(json))
+        fw.write(jsonFormatted)
       } finally {
         fw.close()
+      }
+
+      try {
+        val legacyDataDir = Paths.get(grinder.Boot.UserDir, "data")
+        if (Files.exists(legacyDataDir)) {
+          Files.write(legacyDataDir.resolve("results.json"), jsonFormatted.getBytes("UTF-8"))
+        }
+      } catch {
+        case _: Exception =>
       }
     }
 

@@ -13,7 +13,7 @@ object Boot extends App {
   if (args.length < 1) {
     println("Please provide a command:")
     println("  prepare [inputDir]")
-    println("  compare <browserName> [key] [--profileDir=<path>]")
+    println("  compare <browserName> [key] [--profileDir=<path>] [--reportDir=<path>]")
     System.exit(1)
   }
 

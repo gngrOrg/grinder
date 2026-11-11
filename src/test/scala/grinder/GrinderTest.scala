@@ -173,4 +173,76 @@ class GrinderTest extends AnyFunSpec with Matchers {
     }
   }
 
+  describe("Report Directory and Artifact Emission") {
+    it("should resolve default report directory when not specified") {
+      val defaultBase = ReportConfig.resolveReportBaseDir(Map.empty)
+      defaultBase should be(java.nio.file.Paths.get(Boot.UserDir, "grinder-report").normalize())
+    }
+
+    it("should resolve custom report directory when specified via --reportDir or --report-dir") {
+      val customAbsolute = java.nio.file.Files.createTempDirectory("grinder-test-report").toAbsolutePath().normalize()
+      try {
+        val resolved1 = ReportConfig.resolveReportBaseDir(Map("reportDir" -> customAbsolute.toString))
+        resolved1 should be(customAbsolute)
+
+        val resolved2 = ReportConfig.resolveReportBaseDir(Map("report-dir" -> customAbsolute.toString))
+        resolved2 should be(customAbsolute)
+
+        val relativeResolved = ReportConfig.resolveReportBaseDir(Map("reportDir" -> "custom-report-out"))
+        relativeResolved should be(java.nio.file.Paths.get(Boot.UserDir, "custom-report-out").normalize())
+      } finally {
+        java.nio.file.Files.deleteIfExists(customAbsolute)
+      }
+    }
+
+    it("should fall back to default when reportDir option is empty or whitespace") {
+      val fallback1 = ReportConfig.resolveReportBaseDir(Map("reportDir" -> ""))
+      fallback1 should be(java.nio.file.Paths.get(Boot.UserDir, "grinder-report").normalize())
+
+      val fallback2 = ReportConfig.resolveReportBaseDir(Map("reportDir" -> "   "))
+      fallback2 should be(java.nio.file.Paths.get(Boot.UserDir, "grinder-report").normalize())
+    }
+
+    it("should create timestamped run directory with report.html, reportChanges.html, and screenshots folder") {
+      val tempBase = java.nio.file.Files.createTempDirectory("grinder-run-test")
+      try {
+        val runPaths = ReportConfig.createRunPaths(tempBase)
+
+        // Base directory and timestamped run directory must exist
+        java.nio.file.Files.exists(runPaths.baseReportDir) should be(true)
+        java.nio.file.Files.exists(runPaths.runDir) should be(true)
+        runPaths.runDir.getParent should be(tempBase)
+
+        // screenshots folder must exist
+        java.nio.file.Files.exists(runPaths.screenshotsDir) should be(true)
+        java.nio.file.Files.isDirectory(runPaths.screenshotsDir) should be(true)
+        runPaths.screenshotsDir.getFileName.toString should be("screenshots")
+
+        // report.html and reportChanges.html must be emitted
+        val reportHtml = runPaths.runDir.resolve("report.html")
+        val reportChangesHtml = runPaths.runDir.resolve("reportChanges.html")
+        java.nio.file.Files.exists(reportHtml) should be(true)
+        java.nio.file.Files.exists(reportChangesHtml) should be(true)
+
+        val reportContent = new String(java.nio.file.Files.readAllBytes(reportHtml), "UTF-8")
+        reportContent should include("Grinder reports")
+        reportContent should include("results.json")
+
+        val reportChangesContent = new String(java.nio.file.Files.readAllBytes(reportChangesHtml), "UTF-8")
+        reportChangesContent should include("Grinder reports")
+      } finally {
+        // Cleanup test directory
+        better.files.File(tempBase).delete()
+      }
+    }
+
+    it("should set reportBaseDir correctly on Grinder instance") {
+      val grinderDefault = new Grinder(Seq("gngr", "test-key"), Map.empty)
+      grinderDefault.reportBaseDir should be(java.nio.file.Paths.get(Boot.UserDir, "grinder-report").normalize())
+
+      val grinderCustom = new Grinder(Seq("gngr", "test-key"), Map("reportDir" -> "/tmp/custom-ci-reports"))
+      grinderCustom.reportBaseDir should be(java.nio.file.Paths.get("/tmp/custom-ci-reports").normalize())
+    }
+  }
+
 }

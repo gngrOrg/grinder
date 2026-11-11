@@ -87,8 +87,11 @@ function getData(type, url, callback) {
     NodeList.prototype.map = Array.prototype.map;
     document.querySelectorAll(".list ol").forEach((e) => e.innerHTML = "Loading...");
 
-    var path1 = f.path1.value;
-    getData("json", path1 + "/results.json", function(data1) {
+    var path1 = f.path1.value.trim();
+    if (!path1) { path1 = "."; }
+    var p1Prefix = (path1 === "." ? "" : path1.replace(/\/$/, "") + "/");
+
+    getData("json", p1Prefix + "results.json", function(data1) {
       document.querySelectorAll(".list ol").forEach((e) => e.innerHTML = "");
       report(path1, data1.response);
     });
@@ -97,7 +100,10 @@ function getData(type, url, callback) {
   }
 
   function findTestInfo(id, testInfo) {
-    var t = testInfo.querySelector("test[id='"+id+"']");
+    var t = testInfo ? testInfo.querySelector("test[id='"+id+"']") : null;
+    if (!t) {
+      return { href: id, refHref: id, flags: [] };
+    }
     return {
       href: t.querySelector("test-href").innerHTML,
       refHref: t.querySelector("reference-href").innerHTML,
@@ -110,7 +116,9 @@ function getData(type, url, callback) {
   }
 
   function mkScreenshot(i) {
-    return `<a title=${i.path} href=${"changeTests/tests/" + i.id}><img src=${i.path + "/screenshot/" + safeEncode(i.id) + ".png"} /></a>`;
+    var p = i.path ? (i.path.endsWith("/") ? i.path : i.path + "/") : "";
+    var enc = safeEncode(i.id);
+    return `<a title="${p + i.id}" href="${"changeTests/tests/" + i.id}"><img src="${p}screenshots/${enc}.png" onerror="if(!this.dataset.fallback){this.dataset.fallback=1;this.src='${p}screenshot/${enc}.png';}" /></a>`;
   }
 
   function showDetails(imgs) {
@@ -127,14 +135,13 @@ function getData(type, url, callback) {
   }
 
   function report(path1, data) {
-    var dataRes = data["change-tests"].results;
+    var dataRes = (data && data["change-tests"] && data["change-tests"].results) ? data["change-tests"].results : [];
     dataRes.forEach(function(dr) {
       var e = document.createElement("li");
       e.innerHTML = dr.id;
       e.onclick = () => {
         showDetails([
-          {path: path1, id: dr.id},
-          {path: path1.substr("data/".length), id: dr.id}
+          {path: path1, id: dr.id}
         ]);
         selectElem(e);
       }

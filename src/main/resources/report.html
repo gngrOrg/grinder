@@ -1,0 +1,309 @@
+<html>
+<style>
+h1, h2, h3 {
+  color: #555;
+}
+
+h1 { font-size: 1.3em; border-bottom: 1px solid grey; display: inline-block; margin-right: 1em;}
+form { display: inline-block}
+
+.list {
+  max-height: 15em;
+  max-width: 25%;
+  overflow: auto;
+  display: inline-block;
+  vertical-align: top;
+  border:1px solid blue;
+  padding:.3em;
+}
+
+.list h3 {padding: 0; margin: 0}
+
+.list li {
+  cursor: pointer;
+}
+
+.list li:hover {
+  background: lightgrey;
+}
+
+.list .priorityLow {
+  color: grey;
+}
+
+.list .priorityHigh {
+  font-weight: bold;
+}
+
+.list .hasNote {
+}
+
+.list .hasNote::after {
+  content: "\2020";
+  padding-left: 1mm;
+  padding-right: 1mm;
+  margin-left: 2mm;
+}
+
+#details {
+  margin: .3em 0;
+  border: 1px solid grey;
+  padding: .3em;
+  background: lightsalmon;
+}
+
+#details img {
+  border: 1px dotted lightgrey;
+  width: 49%;
+  margin: 1px;
+}
+
+#details .flag {
+  background: lightgrey;
+  padding: 2pt;
+  border-radius: 2pt;
+  margin: 2pt;
+}
+
+.selected {
+  background: lightgreen;
+}
+
+</style>
+<script>
+async function getData(type, url, callback) {
+  let result = null;
+  try {
+    const res = await fetch(url);
+    if (res.ok) {
+      if (type === "json") {
+        result = await res.json();
+      } else if (type === "document") {
+        const text = await res.text();
+        result = new DOMParser().parseFromString(text, "text/xml");
+      } else {
+        result = await res.text();
+      }
+    }
+  } catch (err) {
+    result = await new Promise((resolve) => {
+      var xhr = new XMLHttpRequest();
+      xhr.responseType = type;
+      xhr.onload = function() {
+        if (xhr.status === 200 || xhr.status === 0) {
+          resolve(type === "document" ? xhr.responseXML : xhr.response);
+        } else {
+          resolve(null);
+        }
+      };
+      xhr.onerror = function() {
+        resolve(null);
+      };
+      xhr.open("GET", url);
+      xhr.send();
+    });
+  }
+
+  if (typeof callback === "function") {
+    callback({ response: result, responseXML: result });
+  }
+  return result;
+}
+</script>
+
+<script>
+  async function formSubmitted(f) {
+    if (window.event) {
+      window.event.preventDefault();
+    }
+    NodeList.prototype.forEach = Array.prototype.forEach; 
+    NodeList.prototype.map = Array.prototype.map;
+    document.querySelectorAll(".list ol").forEach((e) => e.innerHTML = "Loading...");
+
+    var path1 = f.path1.value.trim();
+    var path2 = f.path2 ? f.path2.value.trim() : "";
+    if (!path1) { path1 = "."; }
+    var p1Prefix = (path1 === "." ? "" : path1.replace(/\/$/, "") + "/");
+
+    try {
+      const data1Promise = getData("json", p1Prefix + "results.json");
+      const data3Promise = getData("document", p1Prefix + "test-cases.xml");
+      let data2Promise = Promise.resolve(null);
+      let notesPromise = Promise.resolve(null);
+
+      if (path2) {
+        var p2Prefix = path2.replace(/\/$/, "") + "/";
+        data2Promise = getData("json", p2Prefix + "results.json");
+        notesPromise = getData("json", p2Prefix + "notes.json");
+      }
+
+      const [data1, data3, data2, notes] = await Promise.all([
+        data1Promise,
+        data3Promise,
+        data2Promise,
+        notesPromise
+      ]);
+
+      document.querySelectorAll(".list ol").forEach((e) => e.innerHTML = "");
+      report(path1, path2, data1, data2, data3, notes);
+    } catch (err) {
+      console.error("Error loading report data:", err);
+      document.querySelectorAll(".list ol").forEach((e) => e.innerHTML = "Error loading data");
+    }
+
+    return false;
+  }
+
+  function findTestInfo(id, testInfo) {
+    var t = testInfo ? testInfo.querySelector("test[id='"+id+"']") : null;
+    if (!t) {
+      return { href: id, refHref: id, flags: [] };
+    }
+    return {
+      href: t.querySelector("test-href").innerHTML,
+      refHref: t.querySelector("reference-href").innerHTML,
+      flags: t.querySelectorAll("flag").map(e => e.innerHTML)
+    };
+  }
+
+  function safeEncode(str) {
+    return encodeURIComponent(encodeURIComponent(str));
+  }
+
+  function mkScreenshot(i) {
+    var p = i.path ? (i.path.endsWith("/") ? i.path : i.path + "/") : "";
+    var enc = safeEncode(i.href);
+    var tip = i.type ? (i.type + ": " + p + i.href) : (p + i.href);
+    return `<a target="_blank" title="${tip}" href="${"nightly-unstable/xhtml1/" + i.href}"><img title="${tip}" alt="${i.type || ''}" src="${p}screenshots/${enc}.png" onerror="if(!this.dataset.fallback){this.dataset.fallback=1;this.src='${p}screenshot/${enc}.png';}" /></a>`;
+  }
+
+  function showDetails(imgs, note) {
+    var d = imgs.map(img => mkScreenshot(img)).join("");
+    var noteHtml = note ? note : "";
+    document.getElementById("details").innerHTML = noteHtml + d;
+  }
+
+  function selectElem(e) {
+    var prior = document.querySelector(".selected");
+    if (prior) {
+      prior.classList.remove("selected");
+    }
+    e.classList.add("selected");
+  }
+
+  function report(path1, path2, data, baseline, testInfo, notes) {
+    function getNote(info) {
+      var flags = (info.flags && info.flags.map) ? "<p>" + info.flags.map(f => "<span class='flag'>"+f+"</span>").join("") + "</p>" : "";
+      if (notes) {
+        var note = notes[info.href];
+        return note ? flags + "<p>"+note+"</p>" : flags;
+      } else {
+        return flags;
+      }
+    }
+
+    function addClasses(e, id) {
+      if (notes) {
+        var note = notes[id];
+        if (note) {
+          e.classList.add("hasNote");
+          if (note.startsWith("[low]")) {
+            e.classList.add("priorityLow");
+          } else if (note.startsWith("[high]")) {
+            e.classList.add("priorityHigh");
+          }
+        }
+      }
+    }
+
+    var dataRes = (data && data["css21-reftests"] && data["css21-reftests"].results) ? data["css21-reftests"].results : [];
+    var baseRes = (baseline && baseline["css21-reftests"] && baseline["css21-reftests"].results) ? baseline["css21-reftests"].results : [];
+    dataRes.forEach(function(dr) {
+      var info = findTestInfo(dr.id, testInfo);
+
+      var e = document.createElement("li");
+      e.innerHTML = dr.id;
+      addClasses(e, dr.id);
+      e.onclick = () => {
+        showDetails([
+          {path: path1, href: info.href, type: "actual"},
+          {path: path1, href: info.refHref, type: "reference"}
+        ], getNote(info));
+        selectElem(e);
+      }
+
+      document.getElementById(dr.pass ? "passes" : "fails").appendChild(e);
+
+      var br = baseRes.find((b) => b.id == dr.id);
+      if (br) {
+        if (br.pass != dr.pass) {
+          var e2 = document.createElement("li");
+          e2.innerHTML = dr.id;
+          addClasses(e2, dr.id);
+          e2.onclick = () => {
+            showDetails([
+              {path: path1, href: info.href, type: "actual"},
+              {path: path1, href: info.refHref, type: "reference"},
+              {path: path2, href: info.href, type: "baselineActual"},
+              {path: path2, href: info.refHref, type: "baselineReference"}
+            ], getNote(info));
+            selectElem(e2);
+          }
+          document.getElementById(br.pass ? "regressions" : "progressions").appendChild(e2);
+        }
+      } else {
+        var newTest = document.createElement("li");
+        newTest.innerHTML = dr.id + '[' + (dr.pass ? "Pass" : "Fail") + ']';
+        addClasses(newTest, dr.id);
+        newTest.onclick = () => {
+          showDetails([
+            {path: path1, href: info.href, type: "actual"},
+            {path: path1, href: info.refHref, type: "reference"}
+          ]);
+          selectElem(newTest);
+        }
+        document.getElementById("new").appendChild(newTest);
+      }
+    });
+  }
+</script>
+
+<body>
+<div>
+<h1>Grinder reports</h1>
+<form onsubmit="formSubmitted(this); return false;">
+  <input type="text" name="path1" value="data/" autofocus/>
+  <input type="text" name="path2" value="/grinderBaselines/gngr/">
+  <input type="submit" />
+</form>
+</div>
+
+<div class="list">
+ <h3>Regressions</h3>
+ <ol id="regressions"> </ol>
+</div>
+
+<div class="list">
+ <h3>Fails</h3>
+ <ol id="fails"> </ol>
+</div>
+
+<div class="list">
+ <h3>Progressions</h3>
+ <ol id="progressions"> </ol>
+</div>
+
+<div class="list">
+ <h3>Passes</h3>
+ <ol id="passes"> </ol>
+</div>
+
+<div class="list">
+ <h3>New</h3>
+ <ol id="new"> </ol>
+</div>
+
+<div id="details"> </div>
+
+</body>
+</html>

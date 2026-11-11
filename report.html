@@ -71,41 +71,94 @@ form { display: inline-block}
 
 </style>
 <script>
-function getData(type, url, callback) {
-  var xhr = new XMLHttpRequest();
-  xhr.addEventListener("load", function() {
-    callback(xhr);
-  });
-  xhr.responseType = type;
-  xhr.open("GET", url);
-  xhr.send();
+async function getData(type, url, callback) {
+  let result = null;
+  try {
+    const res = await fetch(url);
+    if (res.ok) {
+      if (type === "json") {
+        result = await res.json();
+      } else if (type === "document") {
+        const text = await res.text();
+        result = new DOMParser().parseFromString(text, "text/xml");
+      } else {
+        result = await res.text();
+      }
+    }
+  } catch (err) {
+    result = await new Promise((resolve) => {
+      var xhr = new XMLHttpRequest();
+      xhr.responseType = type;
+      xhr.onload = function() {
+        if (xhr.status === 200 || xhr.status === 0) {
+          resolve(type === "document" ? xhr.responseXML : xhr.response);
+        } else {
+          resolve(null);
+        }
+      };
+      xhr.onerror = function() {
+        resolve(null);
+      };
+      xhr.open("GET", url);
+      xhr.send();
+    });
+  }
+
+  if (typeof callback === "function") {
+    callback({ response: result, responseXML: result });
+  }
+  return result;
 }
 </script>
 
 <script>
-  function formSubmitted(f) {
+  async function formSubmitted(f) {
+    if (window.event) {
+      window.event.preventDefault();
+    }
     NodeList.prototype.forEach = Array.prototype.forEach; 
     NodeList.prototype.map = Array.prototype.map;
     document.querySelectorAll(".list ol").forEach((e) => e.innerHTML = "Loading...");
 
-    var path1 = f.path1.value;
-    var path2 = f.path2.value;
-    getData("json", path1 + "/results.json", function(data1) {
-      getData("json", path2 + "/results.json", function(data2) {
-        getData("document", path1 + "/test-cases.xml", function(data3) {
-          getData("json", path2 + "/notes.json", function(notesXHR) {
-            document.querySelectorAll(".list ol").forEach((e) => e.innerHTML = "");
-            report(path1, path2, data1.response, data2.response, data3.responseXML, notesXHR.response);
-          });
-        });
-      });
-    });
+    var path1 = f.path1.value.trim();
+    var path2 = f.path2 ? f.path2.value.trim() : "";
+    if (!path1) { path1 = "."; }
+    var p1Prefix = (path1 === "." ? "" : path1.replace(/\/$/, "") + "/");
+
+    try {
+      const data1Promise = getData("json", p1Prefix + "results.json");
+      const data3Promise = getData("document", p1Prefix + "test-cases.xml");
+      let data2Promise = Promise.resolve(null);
+      let notesPromise = Promise.resolve(null);
+
+      if (path2) {
+        var p2Prefix = path2.replace(/\/$/, "") + "/";
+        data2Promise = getData("json", p2Prefix + "results.json");
+        notesPromise = getData("json", p2Prefix + "notes.json");
+      }
+
+      const [data1, data3, data2, notes] = await Promise.all([
+        data1Promise,
+        data3Promise,
+        data2Promise,
+        notesPromise
+      ]);
+
+      document.querySelectorAll(".list ol").forEach((e) => e.innerHTML = "");
+      report(path1, path2, data1, data2, data3, notes);
+    } catch (err) {
+      console.error("Error loading report data:", err);
+      document.querySelectorAll(".list ol").forEach((e) => e.innerHTML = "Error loading data");
+    }
 
     return false;
   }
 
   function findTestInfo(id, testInfo) {
-    var t = testInfo.querySelector("test[id='"+id+"']");
+    var t = testInfo ? testInfo.querySelector("test[id='"+id+"']") : null;
+    if (!t) {
+      return { href: id, refHref: id, flags: [] };
+    }
     return {
       href: t.querySelector("test-href").innerHTML,
       refHref: t.querySelector("reference-href").innerHTML,
@@ -118,7 +171,10 @@ function getData(type, url, callback) {
   }
 
   function mkScreenshot(i) {
-    return `<a target="_blank" title=${i.path + i.href} href=${"nightly-unstable/xhtml1/" + i.href}><img src=${i.path + "/screenshot/" + safeEncode(i.href) + ".png"} /></a>`;
+    var p = i.path ? (i.path.endsWith("/") ? i.path : i.path + "/") : "";
+    var enc = safeEncode(i.href);
+    var tip = i.type ? (i.type + ": " + p + i.href) : (p + i.href);
+    return `<a target="_blank" title="${tip}" href="${"nightly-unstable/xhtml1/" + i.href}"><img title="${tip}" alt="${i.type || ''}" src="${p}screenshots/${enc}.png" onerror="if(!this.dataset.fallback){this.dataset.fallback=1;this.src='${p}screenshot/${enc}.png';}" /></a>`;
   }
 
   function showDetails(imgs, note) {
@@ -137,7 +193,7 @@ function getData(type, url, callback) {
 
   function report(path1, path2, data, baseline, testInfo, notes) {
     function getNote(info) {
-      var flags = "<p>" + info.flags.map(f => "<span class='flag'>"+f+"</span>").join("") + "</p>";
+      var flags = (info.flags && info.flags.map) ? "<p>" + info.flags.map(f => "<span class='flag'>"+f+"</span>").join("") + "</p>" : "";
       if (notes) {
         var note = notes[info.href];
         return note ? flags + "<p>"+note+"</p>" : flags;
@@ -160,8 +216,8 @@ function getData(type, url, callback) {
       }
     }
 
-    var dataRes = data["css21-reftests"].results;
-    var baseRes = baseline["css21-reftests"].results;
+    var dataRes = (data && data["css21-reftests"] && data["css21-reftests"].results) ? data["css21-reftests"].results : [];
+    var baseRes = (baseline && baseline["css21-reftests"] && baseline["css21-reftests"].results) ? baseline["css21-reftests"].results : [];
     dataRes.forEach(function(dr) {
       var info = findTestInfo(dr.id, testInfo);
 
@@ -170,15 +226,15 @@ function getData(type, url, callback) {
       addClasses(e, dr.id);
       e.onclick = () => {
         showDetails([
-          {path: path1, href: info.href},
-          {path: path1, href: info.refHref}
+          {path: path1, href: info.href, type: "actual"},
+          {path: path1, href: info.refHref, type: "reference"}
         ], getNote(info));
         selectElem(e);
       }
 
       document.getElementById(dr.pass ? "passes" : "fails").appendChild(e);
 
-      var br = baseline["css21-reftests"].results.find((b) => b.id == dr.id);
+      var br = baseRes.find((b) => b.id == dr.id);
       if (br) {
         if (br.pass != dr.pass) {
           var e2 = document.createElement("li");
@@ -186,10 +242,10 @@ function getData(type, url, callback) {
           addClasses(e2, dr.id);
           e2.onclick = () => {
             showDetails([
-              {path: path1, href: info.href},
-              {path: path1, href: info.refHref},
-              {path: path2, href: info.href},
-              {path: path2, href: info.refHref}
+              {path: path1, href: info.href, type: "actual"},
+              {path: path1, href: info.refHref, type: "reference"},
+              {path: path2, href: info.href, type: "baselineActual"},
+              {path: path2, href: info.refHref, type: "baselineReference"}
             ], getNote(info));
             selectElem(e2);
           }
@@ -201,8 +257,8 @@ function getData(type, url, callback) {
         addClasses(newTest, dr.id);
         newTest.onclick = () => {
           showDetails([
-            {path: path1, href: info.href},
-            {path: path1, href: info.refHref}
+            {path: path1, href: info.href, type: "actual"},
+            {path: path1, href: info.refHref, type: "reference"}
           ]);
           selectElem(newTest);
         }
@@ -215,7 +271,7 @@ function getData(type, url, callback) {
 <body>
 <div>
 <h1>Grinder reports</h1>
-<form onsubmit="return formSubmitted(this);">
+<form onsubmit="formSubmitted(this); return false;">
   <input type="text" name="path1" value="data/" autofocus/>
   <input type="text" name="path2" value="/grinderBaselines/gngr/">
   <input type="submit" />

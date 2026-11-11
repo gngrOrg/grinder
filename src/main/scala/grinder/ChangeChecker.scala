@@ -21,8 +21,12 @@ case class ChangeTestResult(id: String, change: Boolean)
 class ChangeChecker(args: Seq[String], options: Map[String, String]) {
   private val resourceDir = File(s"${grinder.Boot.UserDir}/changeTests/")
   private val urlBase = s"localhost:8000//changeTests"
-  private val imageDirectory = File(s"${grinder.Boot.UserDir}/data/changeTests/screenshot")
-  private val resultDirectory = File(s"${grinder.Boot.UserDir}/data/changeTests/")
+
+  val reportBaseDir: java.nio.file.Path = ReportConfig.resolveReportBaseDir(options)
+  lazy val reportRunPaths: ReportPaths = ReportConfig.createRunPaths(reportBaseDir)
+
+  private def imageDirectory: File = File(reportRunPaths.screenshotsDir)
+  private def resultDirectory: File = File(reportRunPaths.runDir)
 
   private val nameFilterOpt = options.get("nameFilter").map(_.trim).filter(_.nonEmpty)
 
@@ -52,6 +56,9 @@ class ChangeChecker(args: Seq[String], options: Map[String, String]) {
   }
 
   def run() {
+    val runPaths = reportRunPaths
+    println(s"Reports and screenshots will be written to: ${runPaths.runDir}")
+
     imageDirectory.createDirectories
 
     Pause.init()
@@ -151,11 +158,21 @@ class ChangeChecker(args: Seq[String], options: Map[String, String]) {
           }
         }
       }"""
+      val jsonFormatted = Json.format(json)
       val fw = new java.io.FileWriter((resultDirectory / "results.json").path.toString)
       try {
-        fw.write(Json.format(json))
+        fw.write(jsonFormatted)
       } finally {
         fw.close()
+      }
+
+      try {
+        val legacyDataDir = File(s"${grinder.Boot.UserDir}/data/changeTests")
+        if (legacyDataDir.exists) {
+          (legacyDataDir / "results.json").write(jsonFormatted)
+        }
+      } catch {
+        case _: Exception =>
       }
     }
 

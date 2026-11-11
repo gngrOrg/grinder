@@ -2,11 +2,6 @@ package grinder
 
 import java.nio.file.Path
 
-import org.apache.http.client.methods.HttpPost
-import org.apache.http.entity.mime.MultipartEntityBuilder
-import org.apache.http.entity.mime.content.FileBody
-import org.apache.http.impl.client.HttpClientBuilder
-
 object CheckBaseLine {
 
   def check(args: Array[String]) {

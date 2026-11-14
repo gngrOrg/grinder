@@ -87,46 +87,58 @@ class ChangeChecker(args: Seq[String], options: Map[String, String]) {
       driver.manage().timeouts().implicitlyWait(20, TimeUnit.SECONDS)
 
       val pb = new ProgressBar("Test", selectedTests.length)
-      pb.start()
-      timer.start()
-      selectedTests.foreach { testFile =>
-        val test = (resourceDir / "tests").relativize(testFile).toString
-        val testImage = imageDirectory/(enc(test)+".png")
-        val refImage = resourceDir/"screenshot"/(enc(test)+".png")
-        navAndSnap(test)
-        val same = refImage.exists && GrinderUtil.isScreenShotSame(testImage.toJava, refImage.toJava, failureScale)
-        val result = ChangeTestResult(test, !same)
-        results +:= result
-        if (same) {
-          sames += 1
-        } else {
-          changes += 1
+      var pbStopped = false
+      def stopProgressBar(): Unit = {
+        if (!pbStopped) {
+          pbStopped = true
+          pb.stop()
         }
-        pb.step()
-        pb.setExtraMessage("Changes: " + changes)
-
-        if (Pause.isPauseRequested) {
-          timer.stop()
-          printStats()
-          println(s"\n${Console.BOLD}Paused, stats written. Type `C` or `c` to continue, anything else to quit.${Console.RESET}")
-          val response = io.StdIn.readLine()
-          if (response.matches("[cC]")) {
-            timer.start()
-            Pause.init()
-            println("Continuing")
+      }
+      try {
+        pb.start()
+        timer.start()
+        selectedTests.foreach { testFile =>
+          val test = (resourceDir / "tests").relativize(testFile).toString
+          val testImage = imageDirectory/(enc(test)+".png")
+          val refImage = resourceDir/"screenshot"/(enc(test)+".png")
+          navAndSnap(test)
+          val same = refImage.exists && GrinderUtil.isScreenShotSame(testImage.toJava, refImage.toJava, failureScale)
+          val result = ChangeTestResult(test, !same)
+          results +:= result
+          if (same) {
+            sames += 1
           } else {
+            changes += 1
+          }
+          pb.step()
+          pb.setExtraMessage("Changes: " + changes)
+
+          if (Pause.isPauseRequested) {
+            timer.stop()
+            printStats()
+            println(s"\n${Console.BOLD}Paused, stats written. Type `C` or `c` to continue, anything else to quit.${Console.RESET}")
+            val response = io.StdIn.readLine()
+            if (response != null && response.matches("[cC]")) {
+              timer.start()
+              Pause.init()
+              println("Continuing")
+            } else {
+              stopProgressBar()
+              printStats()
+              throw new QuitRequestedException
+            }
+          } else if (isStopRequired(result)) {
+            timer.stop()
+
+            stopProgressBar()
             printStats()
             throw new QuitRequestedException
           }
-        } else if (isStopRequired(result)) {
-          timer.stop()
-
-          printStats()
-          throw new QuitRequestedException
         }
+        timer.stop()
+      } finally {
+        stopProgressBar()
       }
-      timer.stop()
-      pb.stop()
     } finally {
       driver.quit()
     }

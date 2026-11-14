@@ -245,4 +245,137 @@ class GrinderTest extends AnyFunSpec with Matchers {
     }
   }
 
+  describe("Pause and Quit") {
+    it("should stop the ProgressBar thread when quitting after pause") {
+      import java.awt.image.BufferedImage
+      import java.io.{ByteArrayOutputStream, StringReader}
+      import java.util.Collections
+      import java.util.concurrent.TimeUnit
+      import javax.imageio.ImageIO
+      import org.openqa.selenium.{By, Cookie, Dimension, OutputType, Point, TakesScreenshot, WebDriver, WebElement}
+      import org.openqa.selenium.logging.Logs
+      import scala.collection.JavaConverters._
+
+      val tempReportDir = java.nio.file.Files.createTempDirectory("grinder-pause-quit-test")
+      val dataDir = new File(s"${Boot.UserDir}/data")
+      val testCasesFile = new File(dataDir, "test-cases.xml")
+      val resultsJsonFile = new File(dataDir, "results.json")
+      val resultsJsonExisted = resultsJsonFile.exists()
+      val testCasesExisted = testCasesFile.exists()
+      val pauseFile = new File(Pause.pauseFileLocation)
+      val pauseBackup = if (pauseFile.exists()) {
+        val backup = java.nio.file.Files.createTempFile("grinder-pause-backup", ".tmp")
+        java.nio.file.Files.move(pauseFile.toPath, backup, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        Some(backup)
+      } else None
+
+      if (!testCasesExisted || (scala.xml.XML.loadFile(testCasesFile) \\ "test").isEmpty) {
+        dataDir.mkdirs()
+        val xml =
+          <tests>
+            <test id="test1.xht">
+              <test-title>Test 1</test-title>
+              <test-href>test1.xht</test-href>
+              <reference-value>=</reference-value>
+              <reference-href>test1-ref.xht</reference-href>
+            </test>
+          </tests>
+        scala.xml.XML.save(testCasesFile.getAbsolutePath, xml, enc = "utf-8")
+      }
+
+      try {
+        var threadsDuring = Set.empty[Thread]
+
+        val stubDriver: WebDriver with TakesScreenshot = new WebDriver with TakesScreenshot {
+          private val imgBytes = {
+            val img = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB)
+            val baos = new ByteArrayOutputStream()
+            ImageIO.write(img, "png", baos)
+            baos.toByteArray
+          }
+          private val stubWindow = new WebDriver.Window {
+            def getPosition(): Point = new Point(0, 0)
+            def getSize(): Dimension = new Dimension(800, 800)
+            def maximize(): Unit = ()
+            def fullscreen(): Unit = ()
+            def setPosition(p: Point): Unit = ()
+            def setSize(d: Dimension): Unit = ()
+          }
+          private val stubTimeouts = new WebDriver.Timeouts {
+            def implicitlyWait(time: Long, unit: TimeUnit): WebDriver.Timeouts = this
+            def pageLoadTimeout(time: Long, unit: TimeUnit): WebDriver.Timeouts = this
+            def setScriptTimeout(time: Long, unit: TimeUnit): WebDriver.Timeouts = this
+          }
+          private val stubOptions = new WebDriver.Options {
+            def addCookie(c: Cookie): Unit = ()
+            def deleteAllCookies(): Unit = ()
+            def deleteCookie(c: Cookie): Unit = ()
+            def deleteCookieNamed(n: String): Unit = ()
+            def getCookieNamed(n: String): Cookie = null
+            def getCookies(): java.util.Set[Cookie] = Collections.emptySet()
+            def ime(): WebDriver.ImeHandler = null
+            def logs(): Logs = null
+            def timeouts(): WebDriver.Timeouts = stubTimeouts
+            def window(): WebDriver.Window = stubWindow
+          }
+          private val stubNavigation = new WebDriver.Navigation {
+            def back(): Unit = ()
+            def forward(): Unit = ()
+            def refresh(): Unit = ()
+            def to(url: java.net.URL): Unit = ()
+            def to(url: String): Unit = {
+              threadsDuring ++= Thread.getAllStackTraces().keySet().asScala.filter(_.isAlive)
+              if (!pauseFile.exists()) {
+                pauseFile.createNewFile()
+              }
+            }
+          }
+          def close(): Unit = ()
+          def findElement(by: By): WebElement = null
+          def findElements(by: By): java.util.List[WebElement] = Collections.emptyList()
+          def get(url: String): Unit = ()
+          def getCurrentUrl(): String = ""
+          def getPageSource(): String = ""
+          def getTitle(): String = ""
+          def getWindowHandle(): String = ""
+          def getWindowHandles(): java.util.Set[String] = Collections.emptySet()
+          def manage(): WebDriver.Options = stubOptions
+          def navigate(): WebDriver.Navigation = stubNavigation
+          def quit(): Unit = ()
+          def switchTo(): WebDriver.TargetLocator = null
+          def getScreenshotAs[T](ot: OutputType[T]): T = ot.convertFromPngBytes(imgBytes)
+        }
+
+        val grinder = new Grinder(Seq("gngr", "test-key"), Map("reportDir" -> tempReportDir.toString)) {
+          override lazy val driver: WebDriver with TakesScreenshot = stubDriver
+        }
+
+        val threadsBefore = Thread.getAllStackTraces().keySet().asScala.toSet
+        intercept[QuitRequestedException] {
+          scala.Console.withIn(new StringReader("q\n")) {
+            grinder.run()
+          }
+        }
+
+        val spawnedProgressBarThreads = (threadsDuring -- threadsBefore).filter { t =>
+          t.getName.contains("ProgressBar") || !t.isDaemon
+        }
+        spawnedProgressBarThreads.map(_.getName) should not be empty
+        spawnedProgressBarThreads.filter(_.isAlive) should be(empty)
+        val liveProgressBarThreads = Thread.getAllStackTraces().keySet().asScala.filter { t =>
+          t.isAlive && t.getName.contains("ProgressBar")
+        }
+        liveProgressBarThreads should be(empty)
+      } finally {
+        pauseFile.delete()
+        pauseBackup.foreach { backup =>
+          java.nio.file.Files.move(backup, pauseFile.toPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        }
+        if (!resultsJsonExisted) resultsJsonFile.delete()
+        if (!testCasesExisted) testCasesFile.delete()
+        better.files.File(tempReportDir).delete()
+      }
+    }
+  }
+
 }

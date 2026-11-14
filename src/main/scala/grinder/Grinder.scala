@@ -97,68 +97,80 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
       driver.manage().timeouts().implicitlyWait(20, TimeUnit.SECONDS)
 
       val pb = new ProgressBar("Test", selectedTests.length, 250)
+      var pbStopped = false
+      def stopProgressBar(): Unit = {
+        if (!pbStopped) {
+          pbStopped = true
+          pb.stop()
+        }
+      }
       // pb.start()
-      timer.start()
-      selectedTests.foreach { test =>
-        val testHref = new File(s"$imageDirectory/${enc(test.testHref)}.png")
-        val refHref = new File(s"$imageDirectory/${enc(test.referenceHref)}.png")
-        navAndSnap(test.testHref)
-        navAndSnap(test.referenceHref)
-        val same = GrinderUtil.isScreenShotSame(testHref, refHref, failureScale)
-        val result = TestResult(test.testHref, same)
-        results +:= result
-        if (same) {
-          passes += 1
-        } else {
-          fails += 1
-        }
-
-        val baseLineResultOpt = baseLineResultsOpt match {
-          case Some(baseLineResults) =>
-            baseLineResults.find(_.id == result.id)
-          case _ => None
-        }
-
-        baseLineResultOpt.foreach {blResult =>
+      try {
+        timer.start()
+        selectedTests.foreach { test =>
+          val testHref = new File(s"$imageDirectory/${enc(test.testHref)}.png")
+          val refHref = new File(s"$imageDirectory/${enc(test.referenceHref)}.png")
+          navAndSnap(test.testHref)
+          navAndSnap(test.referenceHref)
+          val same = GrinderUtil.isScreenShotSame(testHref, refHref, failureScale)
+          val result = TestResult(test.testHref, same)
+          results +:= result
           if (same) {
-            if(!blResult.pass) { progressions += 1 }
+            passes += 1
           } else {
-            if(blResult.pass) { regressions += 1 }
+            fails += 1
           }
-        }
 
-        pb.step()
-        pb.setExtraMessage("Fails: " + fails + (if (baseLineResultsOpt.isDefined) {" Progs: " + progressions } else ""))
+          val baseLineResultOpt = baseLineResultsOpt match {
+            case Some(baseLineResults) =>
+              baseLineResults.find(_.id == result.id)
+            case _ => None
+          }
 
-        if (Pause.isPauseRequested) {
-          timer.stop()
-          printStats()
-          println(s"\n${Console.BOLD}Paused, stats written. Type `C` or `c` to continue, anything else to quit.${Console.RESET}")
-          val response = io.StdIn.readLine()
-          if (response.matches("[cC]")) {
-            timer.start()
-            Pause.init()
-            println("Continuing")
-          } else {
+          baseLineResultOpt.foreach {blResult =>
+            if (same) {
+              if(!blResult.pass) { progressions += 1 }
+            } else {
+              if(blResult.pass) { regressions += 1 }
+            }
+          }
+
+          pb.step()
+          pb.setExtraMessage("Fails: " + fails + (if (baseLineResultsOpt.isDefined) {" Progs: " + progressions } else ""))
+
+          if (Pause.isPauseRequested) {
+            timer.stop()
+            printStats()
+            println(s"\n${Console.BOLD}Paused, stats written. Type `C` or `c` to continue, anything else to quit.${Console.RESET}")
+            val response = io.StdIn.readLine()
+            if (response != null && response.matches("[cC]")) {
+              timer.start()
+              Pause.init()
+              println("Continuing")
+            } else {
+              stopProgressBar()
+              printStats()
+              throw new QuitRequestedException
+            }
+          } else if (isStopRequired(result, baseLineResultOpt)) {
+            timer.stop()
+
+            if (imgUploadEnabled) {
+              val testPath = testHref.toPath()
+              ImgUpload.uploadImgur(testPath)
+              val refPath = refHref.toPath()
+              ImgUpload.uploadImgur(refPath)
+            }
+
+            stopProgressBar()
             printStats()
             throw new QuitRequestedException
           }
-        } else if (isStopRequired(result, baseLineResultOpt)) {
-          timer.stop()
-
-          if (imgUploadEnabled) {
-            val testPath = testHref.toPath()
-            ImgUpload.uploadImgur(testPath)
-            val refPath = refHref.toPath()
-            ImgUpload.uploadImgur(refPath)
-          }
-
-          printStats()
-          throw new QuitRequestedException
         }
+        timer.stop()
+      } finally {
+        stopProgressBar()
       }
-      timer.stop()
-      pb.stop()
     } finally {
       driver.quit()
     }

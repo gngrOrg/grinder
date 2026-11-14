@@ -1,7 +1,7 @@
 
 name := "grinder"
 
-version := "1.4.2"
+version := "1.4.3-dev"
 
 scalaVersion := "2.12.21"
 

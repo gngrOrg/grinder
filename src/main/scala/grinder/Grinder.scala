@@ -59,11 +59,11 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
     case "firefox" => new FirefoxDriver()
   }
 
-  private def navigateToPage(link: String) {
+  private def navigateToPage(link: String): Unit = {
     driver.navigate.to(s"$referenceDirectory/$link")
   }
 
-  def run() {
+  def run(): Unit = {
     val runPaths = reportRunPaths
     println(s"Reports and screenshots will be written to: ${runPaths.runDir}")
 
@@ -238,7 +238,7 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
 
   private var visited: Set[String] = Set()
 
-  private def navAndSnap(path: String) {
+  private def navAndSnap(path: String): Unit = {
     if (!visited.contains(path)) {
       visited += path
       try {
@@ -252,7 +252,7 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
 
   private def enc(s: String) = java.net.URLEncoder.encode(s, "UTF-8")
 
-  private def takeScreenShot(name: String) {
+  private def takeScreenShot(name: String): Unit = {
     val bytes:Array[Byte] = driver.getScreenshotAs(OutputType.BYTES)
     val fileName = imageDirectory + "/" + name + ".png"
     FileUtils.writeFile(fileName, bytes)

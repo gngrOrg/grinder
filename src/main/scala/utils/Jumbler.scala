@@ -14,7 +14,7 @@ object Jumbler {
     arr
   }
 
-  private def swap[T](a: Array[T], pos1: Int, pos2: Int) {
+  private def swap[T](a: Array[T], pos1: Int, pos2: Int): Unit = {
     val t = a(pos1)
     a(pos1) = a(pos2)
     a(pos2) = t

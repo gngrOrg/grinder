@@ -9,4 +9,4 @@ scalaVersion := "2.13.18"
 
 libraryDependencies ++= Dependencies.dependencies()
 
-scalacOptions ++= Seq("-opt:l:inline")
+scalacOptions ++= Seq("-opt:l:inline", "-deprecation", "-feature")

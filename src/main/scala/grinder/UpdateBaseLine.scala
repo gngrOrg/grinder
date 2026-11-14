@@ -4,7 +4,7 @@ import java.nio.file._
 
 object UpdateBaseLine {
 
-  def update(args: Array[String]) {
+  def update(args: Array[String]): Unit = {
     val baseLine = new BaseLine(args(0), args(1))
 
     val numBasePassed = baseLine.basePassed.length

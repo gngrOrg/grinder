@@ -9,7 +9,7 @@ import java.nio.file.Files
 object FileUtils {
 
   // Writes only if file content differs
-  def writeFile(fileName: String, bytes: Array[Byte]) {
+  def writeFile(fileName: String, bytes: Array[Byte]): Unit = {
     val path = Paths.get(fileName+"x")
     var same = false
     if (Files.exists(path) && (Files.size(path) == bytes.length)) {

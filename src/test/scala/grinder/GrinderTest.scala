@@ -254,7 +254,7 @@ class GrinderTest extends AnyFunSpec with Matchers {
       import javax.imageio.ImageIO
       import org.openqa.selenium.{By, Cookie, Dimension, OutputType, Point, TakesScreenshot, WebDriver, WebElement}
       import org.openqa.selenium.logging.Logs
-      import scala.collection.JavaConverters._
+      import scala.jdk.CollectionConverters._
 
       val tempReportDir = java.nio.file.Files.createTempDirectory("grinder-pause-quit-test")
       val dataDir = new File(s"${Boot.UserDir}/data")

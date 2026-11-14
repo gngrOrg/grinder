@@ -9,12 +9,12 @@ class CssReftestXmlParser {
 
   val UNSUPPORTED_FLAGS = List("interact","paged", "dom", "dom/js")
 
-  private implicit def node2Convenience(n:xml.Node) = new {
-    def attrib(key: String):String = {
+  private implicit class NodeConvenience(n: xml.Node) {
+    def attrib(key: String): String = {
       n.attribute(key).head.text
     }
 
-    def firstChild(tag: String) = {
+    def firstChild(tag: String): xml.Node = {
       (n \\ tag).head
     }
   }

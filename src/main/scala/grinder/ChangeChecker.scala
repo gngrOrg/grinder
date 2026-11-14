@@ -51,15 +51,15 @@ class ChangeChecker(args: Seq[String], options: Map[String, String]) {
     case "firefox" => new FirefoxDriver()
   }
 
-  private def navigateToPage(link: String) {
+  private def navigateToPage(link: String): Unit = {
     driver.navigate.to(s"$urlBase/$link")
   }
 
-  def run() {
+  def run(): Unit = {
     val runPaths = reportRunPaths
     println(s"Reports and screenshots will be written to: ${runPaths.runDir}")
 
-    imageDirectory.createDirectories
+    imageDirectory.createDirectories()
 
     Pause.init()
 
@@ -198,7 +198,7 @@ class ChangeChecker(args: Seq[String], options: Map[String, String]) {
 
   private var visited: Set[String] = Set()
 
-  private def navAndSnap(path: String) {
+  private def navAndSnap(path: String): Unit = {
     if (!visited.contains(path)) {
       visited += path
       try {
@@ -212,7 +212,7 @@ class ChangeChecker(args: Seq[String], options: Map[String, String]) {
 
   private def enc(s: String) = java.net.URLEncoder.encode(s, "UTF-8")
 
-  private def takeScreenShot(name: String) {
+  private def takeScreenShot(name: String): Unit = {
     val bytes = driver.getScreenshotAs(OutputType.BYTES)
     val file= imageDirectory / (name + ".png")
     val fos = file.newOutputStream

@@ -5,14 +5,14 @@ class Timer {
   private var startTime = 0L
   private var running = false
 
-  def start() {
+  def start(): Unit = {
     synchronized {
       running = true
       startTime = System.currentTimeMillis()
     }
   }
 
-  def stop() {
+  def stop(): Unit = {
     synchronized {
       consumedTime += System.currentTimeMillis() - startTime
       running = false

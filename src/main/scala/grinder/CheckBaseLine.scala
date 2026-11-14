@@ -4,7 +4,7 @@ import java.nio.file.Path
 
 object CheckBaseLine {
 
-  def check(args: Array[String]) {
+  def check(args: Array[String]): Unit = {
     val baseLine = new BaseLine(args(0), args(1))
 
     {
@@ -26,7 +26,7 @@ object CheckBaseLine {
     }
   }
 
-  private def upload(tr: ResultParser.TestResult, baseLine: BaseLine) {
+  private def upload(tr: ResultParser.TestResult, baseLine: BaseLine): Unit = {
     val newShot = baseLine.resolveNewScreenshot(tr.id)
     ImgUpload.uploadImgur(newShot)
   }

@@ -39,7 +39,7 @@ object Boot extends App {
     case te: TestException => println(te.summary)
   }
 
-  def prepare(inputDir: String = "nightly-unstable") {
+  def prepare(inputDir: String = "nightly-unstable"): Unit = {
     val parser = new CssReftestXmlParser
     val baseDir = new File(inputDir)
     val resolvedDir = if (baseDir.isAbsolute) baseDir else new File(UserDir, inputDir)
@@ -61,7 +61,7 @@ object Boot extends App {
 
   }
 
-  def compare() {
+  def compare(): Unit = {
     val (argsRem, optionsMap) = separateArgsOptions(args.tail)
     if (argsRem.nonEmpty) {
       val cssTest = new Grinder(argsRem, optionsMap)
@@ -72,7 +72,7 @@ object Boot extends App {
     }
   }
 
-  def checkChange() {
+  def checkChange(): Unit = {
     val (argsRem, optionsMap) = separateArgsOptions(args.tail)
     if (argsRem.nonEmpty) {
       val changeTestChecker = new ChangeChecker(argsRem, optionsMap)
@@ -83,7 +83,7 @@ object Boot extends App {
     }
   }
 
-  def benchmark() {
+  def benchmark(): Unit = {
     val (argsRem, optionsMap) = separateArgsOptions(args.tail)
     if (argsRem.nonEmpty) {
       val keyOpt = optionsMap.get("key").map(_.trim).filter(_.nonEmpty)

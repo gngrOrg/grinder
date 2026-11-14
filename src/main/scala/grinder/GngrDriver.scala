@@ -55,16 +55,16 @@ class GngrDriver(authKey: String, val profileDir: Option[File] = None) extends W
   private val gngrWindow = new Window {
     def getPosition(): org.openqa.selenium.Point = ???
     def getSize(): org.openqa.selenium.Dimension = ???
-    def maximize() {
+    def maximize(): Unit = {
       ???
     }
 
-    def fullscreen() {
+    def fullscreen(): Unit = {
       ???
     }
 
     def setPosition(x$1: org.openqa.selenium.Point): Unit = ???
-    def setSize(dim: Dimension) {
+    def setSize(dim: Dimension): Unit = {
       execute(grinderPort, s"SET_SIZE ${dim.getWidth} ${dim.getHeight}")
     }
   }
@@ -132,7 +132,7 @@ class GngrDriver(authKey: String, val profileDir: Option[File] = None) extends W
     s
   }
 
-  private def execute(port: Int, command: String, ack: Boolean = true) {
+  private def execute(port: Int, command: String, ack: Boolean = true): Unit = {
     // println(s"Executing $command on $port")
     execute(port, (writer, is) => {
       writer.write(command + "\r\n")
@@ -155,7 +155,7 @@ class GngrDriver(authKey: String, val profileDir: Option[File] = None) extends W
     res
   }
 
-  def close() {
+  def close(): Unit = {
     execute(grinderPort, "CLOSE", ack = false)
   }
 

@@ -13,7 +13,7 @@ object XmlUtils {
     elem
   }
 
-  def saveXmlFile(fileName: String, xml: String, targetDirectory: String) {
+  def saveXmlFile(fileName: String, xml: String, targetDirectory: String): Unit = {
     XML.save(s"$targetDirectory/$fileName.xml", XML.loadString(xml), enc = "utf-8")
   }
 }

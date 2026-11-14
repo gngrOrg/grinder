@@ -33,6 +33,6 @@ WebDriver-based CSS2.1 reftest & visual regression harness for `gngr` and `firef
 - **Local HTTP & File Conventions**: Runners expect a static server at `localhost:8000` serving `nightly-unstable/xhtml1` or `changeTests`. Paths resolve relative to `Boot.UserDir`. Screenshot filenames are `URLEncoder.encode(href, "UTF-8") + ".png"`.
 - **Gngr TCP Protocol (`GngrDriver`)**: Reads control port (`readInt`) from `<profileDir>/port.dat` (default `~/.gngr/default`). Handshakes with `GRINDER <Base64(SHA-256(key + port))>\r\n` to obtain session port + `ACK\r\n`. Sends short-lived socket commands (`SET_SIZE w h`, `TO url`, `SCREENSHOT`, `CLOSE`, `QUIT`) framed by `DataInputStream.readInt` status/length and `ACK\r\n`. Unused `WebDriver` methods are `???`.
 - **Libraries & Idioms**:
-  - Scala 2.13 style (migrated from 2.12; uses procedure syntax `def run() { ... }`), singleton `object` utilities, `synchronized` state in `Pause`/`Timer`.
+  - Scala 2.13 style: singleton `object` utilities, `synchronized` state in `Pause`/`Timer`.
   - JSON via `com.google.gson` (`GsonBuilder`, `JsonObject`, `JsonArray`, `JsonParser`); XML via `scala.xml` literals and `XhtmlParser`; files via `java.nio.file`, `java.io.File`, and `better.files`.
 - **Resource Safety & Testability**: `ProgressBar.stop()` and `driver.quit()` are strictly wrapped in `try / finally` so early exits (`QuitRequestedException`) never leak threads or browser processes. Tests inject stub drivers by overriding `lazy val driver` on `Grinder`.

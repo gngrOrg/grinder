@@ -21,7 +21,7 @@ object Pause {
     }
   }
 
-  def init() {
+  def init(): Unit = {
     synchronized {
       initModTimeOpt = getLastMod
       initialised = true

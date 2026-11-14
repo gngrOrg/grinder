@@ -146,31 +146,34 @@ class ChangeChecker(args: Seq[String], options: Map[String, String]) {
     printStats()
 
     def printStats() = {
-      import rapture.json._
-      import jsonBackends.jawn._
-      import formatters.humanReadable.jsonFormatterImplicit
+      import com.google.gson.{GsonBuilder, JsonArray, JsonObject}
 
       println("Changes : " + changes)
       println("Sames: " + sames)
 
-      val json = json"""{
-        "meta" : {
-          "browser"   : $browserName,
-          "startDate" : ${startDate.format(DateTimeFormatter.ISO_LOCAL_DATE)},
-          "timeTaken" : ${timer.getConsumedTime}
-        },
-        "change-tests" : {
-          "totalCount" : ${testCases.length},
-          "selectedCount" : ${selectedTests.length},
-          "results": ${
-            results.map(r => json"""{
-              "id": ${r.id},
-              "change": ${r.change}
-            }""")
-          }
-        }
-      }"""
-      val jsonFormatted = Json.format(json)
+      val metaObj = new JsonObject()
+      metaObj.addProperty("browser", browserName)
+      metaObj.addProperty("startDate", startDate.format(DateTimeFormatter.ISO_LOCAL_DATE))
+      metaObj.addProperty("timeTaken", java.lang.Long.valueOf(timer.getConsumedTime))
+
+      val resultsArr = new JsonArray()
+      results.foreach { r =>
+        val itemObj = new JsonObject()
+        itemObj.addProperty("id", r.id)
+        itemObj.addProperty("change", java.lang.Boolean.valueOf(r.change))
+        resultsArr.add(itemObj)
+      }
+
+      val changeTestsObj = new JsonObject()
+      changeTestsObj.addProperty("totalCount", Integer.valueOf(testCases.length))
+      changeTestsObj.addProperty("selectedCount", Integer.valueOf(selectedTests.length))
+      changeTestsObj.add("results", resultsArr)
+
+      val json = new JsonObject()
+      json.add("meta", metaObj)
+      json.add("change-tests", changeTestsObj)
+
+      val jsonFormatted = new GsonBuilder().setPrettyPrinting().create().toJson(json)
       val fw = new java.io.FileWriter((resultDirectory / "results.json").path.toString)
       try {
         fw.write(jsonFormatted)

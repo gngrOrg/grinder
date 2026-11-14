@@ -37,7 +37,7 @@ class CssReftestXmlParser {
       val flagTitle = (td2 \\ "abbr").map(node => node.attrib("title")).mkString(" ")
       val flagValue = (td2 \\ "abbr").map(node => node.head.text).mkString(" ")
 
-      TestCase(testTitle, testHref, refrenceValue, refrenceHref, flagTitle, flagValue.split("\\s+").filter(_.length > 0).map(_.toLowerCase))
+      TestCase(testTitle, testHref, refrenceValue, refrenceHref, flagTitle, flagValue.split("\\s+").filter(_.length > 0).map(_.toLowerCase).toSeq)
     }).filterNot(hasUnsupportedFlag)
 
     println("Supported test cases: " + testCases.length)

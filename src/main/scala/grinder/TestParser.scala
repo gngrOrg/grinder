@@ -10,7 +10,7 @@ class TestXmlParser {
 
     val testCases = sourceXml \\ "test"
 
-    testCases.par.map(test => {
+    testCases.map(test => {
       val title = (test \ "test-title").text
       val href = (test \ "test-href").text
       val refValue = (test \ "reference-value").text

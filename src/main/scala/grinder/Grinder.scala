@@ -178,33 +178,36 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
     printStats()
 
     def printStats() = {
-      import rapture.json._
-      import jsonBackends.jawn._
-      import formatters.humanReadable.jsonFormatterImplicit
+      import com.google.gson.{GsonBuilder, JsonArray, JsonObject}
 
       println("Fails       : " + fails)
       println("Passes      : " + passes)
       println("Progressions: " + (if (baseLineResultsOpt.isDefined) ("" + progressions) else "N/A"))
       println("Regressions : " + (if (baseLineResultsOpt.isDefined) ("" + regressions) else "N/A"))
 
-      val json = json"""{
-        "meta" : {
-          "browser"   : $browserName,
-          "startDate" : ${startDate.format(DateTimeFormatter.ISO_LOCAL_DATE)},
-          "timeTaken" : ${timer.getConsumedTime}
-        },
-        "css21-reftests" : {
-          "totalCount" : ${testCases.length},
-          "selectedCount" : ${selectedTests.length},
-          "results": ${
-            results.sortBy(_.id).reverse.map(r => json"""{
-              "id": ${r.id},
-              "pass": ${r.pass}
-            }""")
-          }
-        }
-      }"""
-      val jsonFormatted = Json.format(json)
+      val metaObj = new JsonObject()
+      metaObj.addProperty("browser", browserName)
+      metaObj.addProperty("startDate", startDate.format(DateTimeFormatter.ISO_LOCAL_DATE))
+      metaObj.addProperty("timeTaken", java.lang.Long.valueOf(timer.getConsumedTime))
+
+      val resultsArr = new JsonArray()
+      results.sortBy(_.id).reverse.foreach { r =>
+        val itemObj = new JsonObject()
+        itemObj.addProperty("id", r.id)
+        itemObj.addProperty("pass", java.lang.Boolean.valueOf(r.pass))
+        resultsArr.add(itemObj)
+      }
+
+      val reftestsObj = new JsonObject()
+      reftestsObj.addProperty("totalCount", Integer.valueOf(testCases.length))
+      reftestsObj.addProperty("selectedCount", Integer.valueOf(selectedTests.length))
+      reftestsObj.add("results", resultsArr)
+
+      val json = new JsonObject()
+      json.add("meta", metaObj)
+      json.add("css21-reftests", reftestsObj)
+
+      val jsonFormatted = new GsonBuilder().setPrettyPrinting().create().toJson(json)
       val fw = new java.io.FileWriter(resultDirectory + "/results.json")
       try {
         fw.write(jsonFormatted)

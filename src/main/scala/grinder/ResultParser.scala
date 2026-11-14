@@ -1,25 +1,25 @@
 package grinder
 
+import java.nio.charset.StandardCharsets
 import java.nio.file._
-import collection.JavaConversions._
-import collection.JavaConverters._
+import com.google.gson.{JsonObject, JsonParser}
 
 object ResultParser {
   case class TestResult(pass: Boolean, id: String)
 
-  import rapture.json._
-  import jsonBackends.jawn._
-
-  private def json(path: Path):Json = {
+  private def json(path: Path): JsonObject = {
     val resultPath = path.resolve("results.json")
-    val str = Files.readAllLines(resultPath).asScala.mkString("")
-    Json.parse(str)
+    val str = new String(Files.readAllBytes(resultPath), StandardCharsets.UTF_8)
+    new JsonParser().parse(str).getAsJsonObject
   }
 
-  def getResults(path: Path):Array[TestResult] = {
+  def getResults(path: Path): Array[TestResult] = {
     val myJSON = json(path)
-    val tests = myJSON.selectDynamic("css21-reftests")
-    tests.results.as[Array[TestResult]]
+    val resultsArr = myJSON.getAsJsonObject("css21-reftests").getAsJsonArray("results")
+    Array.tabulate(resultsArr.size()) { i =>
+      val obj = resultsArr.get(i).getAsJsonObject
+      TestResult(obj.get("pass").getAsBoolean, obj.get("id").getAsString)
+    }
   }
 
 }

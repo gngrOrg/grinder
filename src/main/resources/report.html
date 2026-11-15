@@ -154,16 +154,36 @@ async function getData(type, url, callback) {
     return false;
   }
 
+  function extractTestInfo(t) {
+    return {
+      href: t.querySelector("test-href").innerHTML,
+      refHref: t.querySelector("reference-href").innerHTML,
+      flags: Array.from(t.querySelectorAll("flag"), e => e.innerHTML)
+    };
+  }
+
+  function indexTestInfo(testInfo) {
+    var map = new Map();
+    if (testInfo && typeof testInfo.querySelectorAll === "function") {
+      testInfo.querySelectorAll("test").forEach(function(t) {
+        var id = t.getAttribute("id");
+        if (id !== null && !map.has(id)) {
+          map.set(id, extractTestInfo(t));
+        }
+      });
+    }
+    return map;
+  }
+
   function findTestInfo(id, testInfo) {
+    if (testInfo instanceof Map) {
+      return testInfo.get(id) || { href: id, refHref: id, flags: [] };
+    }
     var t = testInfo ? testInfo.querySelector("test[id='"+id+"']") : null;
     if (!t) {
       return { href: id, refHref: id, flags: [] };
     }
-    return {
-      href: t.querySelector("test-href").innerHTML,
-      refHref: t.querySelector("reference-href").innerHTML,
-      flags: t.querySelectorAll("flag").map(e => e.innerHTML)
-    };
+    return extractTestInfo(t);
   }
 
   function safeEncode(str) {
@@ -218,8 +238,29 @@ async function getData(type, url, callback) {
 
     var dataRes = (data && data["css21-reftests"] && data["css21-reftests"].results) ? data["css21-reftests"].results : [];
     var baseRes = (baseline && baseline["css21-reftests"] && baseline["css21-reftests"].results) ? baseline["css21-reftests"].results : [];
+
+    var testInfoMap = indexTestInfo(testInfo);
+    var baseResMap = new Map();
+    baseRes.forEach(function(b) {
+      if (!baseResMap.has(b.id)) {
+        baseResMap.set(b.id, b);
+      }
+    });
+
+    var passesEl = document.getElementById("passes");
+    var failsEl = document.getElementById("fails");
+    var regressionsEl = document.getElementById("regressions");
+    var progressionsEl = document.getElementById("progressions");
+    var newEl = document.getElementById("new");
+
+    var passesFrag = document.createDocumentFragment();
+    var failsFrag = document.createDocumentFragment();
+    var regressionsFrag = document.createDocumentFragment();
+    var progressionsFrag = document.createDocumentFragment();
+    var newFrag = document.createDocumentFragment();
+
     dataRes.forEach(function(dr) {
-      var info = findTestInfo(dr.id, testInfo);
+      var info = findTestInfo(dr.id, testInfoMap);
 
       var e = document.createElement("li");
       e.innerHTML = dr.id;
@@ -232,9 +273,9 @@ async function getData(type, url, callback) {
         selectElem(e);
       }
 
-      document.getElementById(dr.pass ? "passes" : "fails").appendChild(e);
+      (dr.pass ? passesFrag : failsFrag).appendChild(e);
 
-      var br = baseRes.find((b) => b.id == dr.id);
+      var br = baseResMap.get(dr.id);
       if (br) {
         if (br.pass != dr.pass) {
           var e2 = document.createElement("li");
@@ -249,7 +290,7 @@ async function getData(type, url, callback) {
             ], getNote(info));
             selectElem(e2);
           }
-          document.getElementById(br.pass ? "regressions" : "progressions").appendChild(e2);
+          (br.pass ? regressionsFrag : progressionsFrag).appendChild(e2);
         }
       } else {
         var newTest = document.createElement("li");
@@ -262,9 +303,15 @@ async function getData(type, url, callback) {
           ]);
           selectElem(newTest);
         }
-        document.getElementById("new").appendChild(newTest);
+        newFrag.appendChild(newTest);
       }
     });
+
+    passesEl.appendChild(passesFrag);
+    failsEl.appendChild(failsFrag);
+    regressionsEl.appendChild(regressionsFrag);
+    progressionsEl.appendChild(progressionsFrag);
+    newEl.appendChild(newFrag);
   }
 </script>
 

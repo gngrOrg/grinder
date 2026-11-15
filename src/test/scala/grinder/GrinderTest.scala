@@ -444,6 +444,20 @@ class GrinderTest extends AnyFunSpec with Matchers {
       val grinderCustom = new Grinder(Seq("gngr", "test-key"), Map("reportDir" -> "/tmp/custom-ci-reports"))
       grinderCustom.reportBaseDir should be(java.nio.file.Paths.get("/tmp/custom-ci-reports").normalize())
     }
+
+    it("should keep report.html and resource report.html in sync with indexed lookups and batched fragments") {
+      import java.nio.file.{Files, Paths}
+
+      val rootReport = Files.readAllBytes(Paths.get(Boot.UserDir, "report.html"))
+      val resourceReport = Files.readAllBytes(Paths.get(Boot.UserDir, "src", "main", "resources", "report.html"))
+      rootReport should be(resourceReport)
+
+      val content = new String(rootReport, "UTF-8")
+      content should include("""querySelectorAll("test")""")
+      content should include("new Map()")
+      content should include("document.createDocumentFragment()")
+      content should not include("baseRes.find(")
+    }
   }
 
   describe("Pause and Quit") {

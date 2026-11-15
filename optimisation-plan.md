@@ -2,7 +2,7 @@
 
 1. [x] Replace O(N) baseline lookup per test in `Grinder.run` with an indexed map
 2. [x] Replace O(N^2) `.exists` and `.contains` scans in `BaseLine` with map/set lookups
-3. [ ] Eliminate O(N^2) DOM queries, linear scans, and per-item DOM appends in `report.html`
+3. [x] Eliminate O(N^2) DOM queries, linear scans, and per-item DOM appends in `report.html`
 4. [x] Cache decoded reference images in memory and avoid redundant disk reads after screenshot capture
 5. [x] Replace single-byte read loops in `GrinderUtil.isFileContentSame` and `FileUtils.writeFile`
 6. [x] Add early exit to the inner pixel comparison loop in `GrinderUtil.isScreenShotSame`

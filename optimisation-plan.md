@@ -9,8 +9,8 @@
 7. [x] Read screenshots directly into a pre-sized byte array in `GngrDriver.getScreenshotAs`
 8. [x] Cache loopback `InetAddress` and close streams/sockets safely in `GngrDriver`
 9. [x] Remove XML string round-trip in `Boot.prepare` / `XmlUtils.saveXmlFile` and close `Source` in `loadXmlFromFile`
-10. [ ] Avoid duplicate `\\` traversals and parse flags before other fields in `CssReftestXmlParser`
-11. [ ] Remove duplicate URL encoding in `Grinder` / `ChangeChecker` and O(N^2) list append in `UpdateBaseLine`
+10. [x] Avoid duplicate `\\` traversals and parse flags before other fields in `CssReftestXmlParser`
+11. [x] Remove duplicate URL encoding in `Grinder` / `ChangeChecker` and O(N^2) list append in `UpdateBaseLine`
 12. [x] Remove unused legacy classes (`parser.CssReftestXmlParser`, `utils.XmlUtils`) and narrow `-opt-inline`
 
 ## 1. Per-test baseline lookup in `Grinder.run`

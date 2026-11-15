@@ -145,6 +145,82 @@ class GrinderTest extends AnyFunSpec with Matchers {
         deleteRecursively(tempDir)
       }
     }
+
+    it("should skip unsupported flags before extracting other fields in CssReftestXmlParser") {
+      val tempDir = java.nio.file.Files.createTempDirectory("grinder-test-parser").toFile
+      try {
+        val tocFile = new File(tempDir, "reftest-toc.xht")
+        val sampleToc =
+          <html xmlns="http://www.w3.org/1999/xhtml">
+            <body>
+              <table>
+                <tbody>
+                  <tr>
+                    <td title="Supported No Flags"><a href="sup-none.xht">Supported No Flags</a></td>
+                    <td><a href="sup-none-ref.xht">=</a></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+                <tbody>
+                  <tr>
+                    <td title="Supported Flags"><a href="sup-flags.xht">Supported Flags</a></td>
+                    <td><a href="sup-flags-ref.xht">!=</a></td>
+                    <td><abbr title="Requires Ahem">Ahem</abbr><abbr title="Uses image">image</abbr></td>
+                  </tr>
+                </tbody>
+                <tbody>
+                  <tr>
+                    <td title="Unsupported Interact"><span>no link</span></td>
+                    <td><span>no ref</span></td>
+                    <td><abbr title="Requires interaction">interact</abbr></td>
+                  </tr>
+                </tbody>
+                <tbody>
+                  <tr>
+                    <td title="Unsupported Paged"><a href="unsup-paged.xht">Paged</a></td>
+                    <td><a href="unsup-paged-ref.xht">=</a></td>
+                    <td><abbr title="Paged media">paged</abbr></td>
+                  </tr>
+                </tbody>
+                <tbody>
+                  <tr>
+                    <td title="Unsupported DOM"><a href="unsup-dom.xht">DOM</a></td>
+                    <td><a href="unsup-dom-ref.xht">=</a></td>
+                    <td><abbr title="Requires DOM">dom</abbr></td>
+                  </tr>
+                </tbody>
+                <tbody>
+                  <tr>
+                    <td title="Unsupported Mixed"><a href="unsup-domjs.xht">DOM/JS</a></td>
+                    <td><a href="unsup-domjs-ref.xht">=</a></td>
+                    <td><abbr title="Requires Ahem">ahem</abbr><abbr title="Requires DOM/JS">dom/js</abbr></td>
+                  </tr>
+                </tbody>
+              </table>
+            </body>
+          </html>
+        scala.xml.XML.save(tocFile.getAbsolutePath, sampleToc, enc = "utf-8")
+
+        val parser = new CssReftestXmlParser()
+        val parsed = parser.parse(tocFile)
+        val tests = parsed \ "test"
+        tests.length should be(2)
+
+        (tests(0) \ "test-title").text should be("Supported No Flags")
+        (tests(0) \ "test-href").text should be("sup-none.xht")
+        (tests(0) \ "reference-value").text should be("=")
+        (tests(0) \ "reference-href").text should be("sup-none-ref.xht")
+        (tests(0) \ "flags").isEmpty should be(true)
+
+        (tests(1) \ "test-title").text should be("Supported Flags")
+        (tests(1) \ "test-href").text should be("sup-flags.xht")
+        (tests(1) \ "reference-value").text should be("!=")
+        (tests(1) \ "reference-href").text should be("sup-flags-ref.xht")
+        (tests(1) \ "flags" \ "flag").map(_.text) should be(Seq("ahem", "image"))
+      } finally {
+        better.files.File(tempDir.toPath).delete()
+      }
+    }
   }
 
   describe("Gngr Profile Directory") {
@@ -570,6 +646,71 @@ class GrinderTest extends AnyFunSpec with Matchers {
         baseLine.newlyAdded.map(_.id) should be(Array("added.xht"))
         baseLine.progressions.map(_.id) should be(Array("progressed.xht"))
         baseLine.regressions.map(_.id) should be(Array("regressed.xht"))
+      } finally {
+        better.files.File(tempDir).delete()
+      }
+    }
+
+    it("should copy selected regression screenshots in order during UpdateBaseLine.update") {
+      import java.io.{ByteArrayOutputStream, PrintStream, StringReader}
+      import java.nio.file.Files
+
+      val tempDir = Files.createTempDirectory("grinder-update-baseline-test")
+      try {
+        val baseDir = tempDir.resolve("base")
+        val newDir = tempDir.resolve("new")
+        val baseShots = baseDir.resolve("screenshots")
+        val newShots = newDir.resolve("screenshots")
+        Files.createDirectories(baseShots)
+        Files.createDirectories(newShots)
+
+        val baseJson =
+          """{
+            |  "css21-reftests": {
+            |    "results": [
+            |      {"id": "reg1.xht", "pass": true},
+            |      {"id": "reg2.xht", "pass": true},
+            |      {"id": "reg3.xht", "pass": true}
+            |    ]
+            |  }
+            |}""".stripMargin
+        val newJson =
+          """{
+            |  "css21-reftests": {
+            |    "results": [
+            |      {"id": "reg1.xht", "pass": false},
+            |      {"id": "reg2.xht", "pass": false},
+            |      {"id": "reg3.xht", "pass": false}
+            |    ]
+            |  }
+            |}""".stripMargin
+
+        Files.writeString(baseDir.resolve("results.json"), baseJson)
+        Files.writeString(newDir.resolve("results.json"), newJson)
+
+        Seq("reg1.xht", "reg2.xht", "reg3.xht").foreach { id =>
+          Files.write(baseShots.resolve(s"$id.png"), s"base-$id".getBytes("UTF-8"))
+          Files.write(newShots.resolve(s"$id.png"), s"new-$id".getBytes("UTF-8"))
+        }
+
+        val outBytes = new ByteArrayOutputStream()
+        val outStream = new PrintStream(outBytes, true, "UTF-8")
+        try {
+          scala.Console.withOut(outStream) {
+            scala.Console.withIn(new StringReader("y\ns\ny\n")) {
+              UpdateBaseLine.update(Array(newDir.toString, baseDir.toString))
+            }
+          }
+        } finally {
+          outStream.close()
+        }
+
+        new String(Files.readAllBytes(baseShots.resolve("reg1.xht.png")), "UTF-8") should be("new-reg1.xht")
+        new String(Files.readAllBytes(baseShots.resolve("reg2.xht.png")), "UTF-8") should be("base-reg2.xht")
+        new String(Files.readAllBytes(baseShots.resolve("reg3.xht.png")), "UTF-8") should be("new-reg3.xht")
+
+        val output = outBytes.toString("UTF-8")
+        output should include("Copied:\nTestResult(false,reg1.xht)\nTestResult(false,reg3.xht)")
       } finally {
         better.files.File(tempDir).delete()
       }

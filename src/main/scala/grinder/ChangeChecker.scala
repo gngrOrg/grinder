@@ -101,9 +101,10 @@ class ChangeChecker(args: Seq[String], options: Map[String, String]) {
         timer.start()
         selectedTests.foreach { testFile =>
           val test = (resourceDir / "tests").relativize(testFile).toString
-          val testImage = imageDirectory/(enc(test)+".png")
-          val refImage = resourceDir/"screenshot"/(enc(test)+".png")
-          val testBytesOpt = navAndSnap(test)
+          val encodedFileName = enc(test) + ".png"
+          val testImage = imageDirectory / encodedFileName
+          val refImage = resourceDir / "screenshot" / encodedFileName
+          val testBytesOpt = navAndSnap(test, testImage)
           val same = refImage.exists && GrinderUtil.isScreenShotSame(testImage.toJava, refImage.toJava, failureScale, testBytesOpt, None)
           val result = ChangeTestResult(test, !same)
           results +:= result
@@ -202,12 +203,12 @@ class ChangeChecker(args: Seq[String], options: Map[String, String]) {
 
   private var visited: Set[String] = Set()
 
-  private def navAndSnap(path: String): Option[Array[Byte]] = {
+  private def navAndSnap(path: String, targetFile: File): Option[Array[Byte]] = {
     if (!visited.contains(path)) {
       visited += path
       try {
         navigateToPage("tests/" + path)
-        Some(takeScreenShot(enc(path)))
+        Some(takeScreenShot(targetFile))
       } catch {
         case wde: WebDriverException =>
           println(s"\nError for $path : ${wde.getMessage}")
@@ -220,9 +221,8 @@ class ChangeChecker(args: Seq[String], options: Map[String, String]) {
 
   private def enc(s: String) = java.net.URLEncoder.encode(s, "UTF-8")
 
-  private def takeScreenShot(name: String): Array[Byte] = {
+  private def takeScreenShot(file: File): Array[Byte] = {
     val bytes = driver.getScreenshotAs(OutputType.BYTES)
-    val file= imageDirectory / (name + ".png")
     val fos = file.newOutputStream
     try {
       fos.write(bytes)

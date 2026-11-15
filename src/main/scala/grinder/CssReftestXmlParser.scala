@@ -7,7 +7,7 @@ case class TestCase(testTitle: String, testHref: String, refrenceValue: String, 
 
 class CssReftestXmlParser {
 
-  val UNSUPPORTED_FLAGS = List("interact","paged", "dom", "dom/js")
+  val UNSUPPORTED_FLAGS = Set("interact", "paged", "dom", "dom/js")
 
   private implicit class NodeConvenience(n: xml.Node) {
     def attrib(key: String): String = {
@@ -15,7 +15,7 @@ class CssReftestXmlParser {
     }
 
     def firstChild(tag: String): xml.Node = {
-      (n \\ tag).head
+      (n \ tag).head
     }
   }
 
@@ -24,21 +24,28 @@ class CssReftestXmlParser {
     val refTestXml = XmlUtils.loadXmlFromFile(reftestXmlFile)
     val rows = refTestXml \\ "tbody"
 
-    val testCases = rows.map(row => {
-      val trs = row \\ "tr"
-      val tdNodes = trs.head \\ "td"
-      val td0 = tdNodes.head
-      val td1 = tdNodes(1)
+    val testCases = rows.flatMap { row =>
+      val trs = row \ "tr"
+      val tdNodes = trs.head \ "td"
       val td2 = tdNodes(2)
-      val testTitle = td0.attrib("title")
-      val testHref = td0.firstChild("a").attrib("href")
-      val refrenceValue = td1.firstChild("a").text
-      val refrenceHref = td1.firstChild("a").attrib("href")
-      val flagTitle = (td2 \\ "abbr").map(node => node.attrib("title")).mkString(" ")
-      val flagValue = (td2 \\ "abbr").map(node => node.head.text).mkString(" ")
+      val abbrNodes = td2 \ "abbr"
+      val flagValue = abbrNodes.map(_.text).mkString(" ")
+      val flags = flagValue.split("\\s+").filter(_.length > 0).map(_.toLowerCase).toSeq
+      if (flags.exists(UNSUPPORTED_FLAGS.contains)) {
+        None
+      } else {
+        val td0 = tdNodes.head
+        val td1 = tdNodes(1)
+        val td1Anchor = td1.firstChild("a")
+        val testTitle = td0.attrib("title")
+        val testHref = td0.firstChild("a").attrib("href")
+        val refrenceValue = td1Anchor.text
+        val refrenceHref = td1Anchor.attrib("href")
+        val flagTitle = abbrNodes.map(_.attrib("title")).mkString(" ")
 
-      TestCase(testTitle, testHref, refrenceValue, refrenceHref, flagTitle, flagValue.split("\\s+").filter(_.length > 0).map(_.toLowerCase).toSeq)
-    }).filterNot(hasUnsupportedFlag)
+        Some(TestCase(testTitle, testHref, refrenceValue, refrenceHref, flagTitle, flags))
+      }
+    }
 
     println("Supported test cases: " + testCases.length)
 
@@ -56,7 +63,7 @@ class CssReftestXmlParser {
                 testCase.flags.map { flag => <flag>{flag}</flag> }
               }
               </flags>
-            }
+            } else scala.xml.NodeSeq.Empty
           }
         </test>
       })}
@@ -65,7 +72,7 @@ class CssReftestXmlParser {
     testCaseXml
   }
 
-  def hasUnsupportedFlag: (TestCase) => Boolean = {
-    testCase => UNSUPPORTED_FLAGS.exists(flag => testCase.flags.contains(flag))
+  def hasUnsupportedFlag(testCase: TestCase): Boolean = {
+    testCase.flags.exists(UNSUPPORTED_FLAGS.contains)
   }
 }

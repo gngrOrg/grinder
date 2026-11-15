@@ -51,7 +51,7 @@ object UpdateBaseLine {
       val regressions = baseLine.regressions
       println("Regressions: " + regressions.length)
       if (regressions.length > 0) {
-        var copied = Seq[ResultParser.TestResult]()
+        val copied = scala.collection.mutable.ListBuffer[ResultParser.TestResult]()
         var continue = true
         val iter = regressions.iterator
         while (continue && iter.hasNext) {
@@ -62,7 +62,7 @@ object UpdateBaseLine {
             val fromPath = baseLine.resolveNewScreenshot(r.id)
             val toPath = baseLine.resolveBaseScreenshot(r.id)
             Files.copy(fromPath, toPath, StandardCopyOption.REPLACE_EXISTING)
-            copied :+= r
+            copied += r
           } else if (response.matches("[sS]")) {
             // do nothing
           } else {

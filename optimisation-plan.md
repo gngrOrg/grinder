@@ -1,12 +1,12 @@
 # Optimisation Plan
 
-1. [ ] Replace O(N) baseline lookup per test in `Grinder.run` with an indexed map
-2. [ ] Replace O(N^2) `.exists` and `.contains` scans in `BaseLine` with map/set lookups
+1. [x] Replace O(N) baseline lookup per test in `Grinder.run` with an indexed map
+2. [x] Replace O(N^2) `.exists` and `.contains` scans in `BaseLine` with map/set lookups
 3. [ ] Eliminate O(N^2) DOM queries, linear scans, and per-item DOM appends in `report.html`
 4. [ ] Cache decoded reference images in memory and avoid redundant disk reads after screenshot capture
-5. [ ] Replace single-byte read loops in `GrinderUtil.isFileContentSame` and `FileUtils.writeFile`
-6. [ ] Add early exit to the inner pixel comparison loop in `GrinderUtil.isScreenShotSame`
-7. [ ] Read screenshots directly into a pre-sized byte array in `GngrDriver.getScreenshotAs`
+5. [x] Replace single-byte read loops in `GrinderUtil.isFileContentSame` and `FileUtils.writeFile`
+6. [x] Add early exit to the inner pixel comparison loop in `GrinderUtil.isScreenShotSame`
+7. [x] Read screenshots directly into a pre-sized byte array in `GngrDriver.getScreenshotAs`
 8. [ ] Cache loopback `InetAddress` and close streams/sockets safely in `GngrDriver`
 9. [x] Remove XML string round-trip in `Boot.prepare` / `XmlUtils.saveXmlFile` and close `Source` in `loadXmlFromFile`
 10. [ ] Avoid duplicate `\\` traversals and parse flags before other fields in `CssReftestXmlParser`
@@ -49,9 +49,9 @@ Change: Maintain a bounded LRU cache (e.g., `java.util.LinkedHashMap` with `remo
 
 Target: `src/main/scala/utils/ImageCompare.scala` (lines 85-109) and `src/main/scala/utils/FileUtils.scala` (lines 12-41)
 
-Issue: `isFileContentSame` reads both `BufferedInputStream`s one byte at a time (`in1.read()`, `in2.read()`) and does not close streams inside `try / finally`. In `FileUtils.writeFile`, `val path = Paths.get(fileName+"x")` has a trailing `"x"` typo, so the existence check never matches; when writing into a fresh timestamped `screenshots/` directory with `visited` deduplication, pre-write disk comparison is also unnecessary.
+Issue: `isFileContentSame` reads both `BufferedInputStream`s one byte at a time (`in1.read()`, `in2.read()`) and does not close streams inside `try / finally`. In `FileUtils.writeFile`, `val path = Paths.get(fileName+"x")` has a trailing `"x"` typo, so the existence check never matches, and when it would match it reads one byte at a time without closing the stream inside `try / finally`.
 
-Change: Replace `isFileContentSame` with `java.nio.file.Files.mismatch(file1.toPath, file2.toPath) == -1L` (or bulk byte-array reads wrapped in `try / finally` if targeting older JDKs). Simplify `FileUtils.writeFile` to `Files.write(Paths.get(fileName), bytes)`.
+Change: Replace `isFileContentSame` with `java.nio.file.Files.mismatch(file1.toPath, file2.toPath) == -1L` (or bulk byte-array reads wrapped in `try / finally` if targeting older JDKs). In `FileUtils.writeFile`, fix `val path = Paths.get(fileName)` and check `Files.exists(path) && Files.size(path) == bytes.length && Arrays.equals(Files.readAllBytes(path), bytes)` before calling `Files.write(path, bytes)`.
 
 ## 6. Missing early exit in inner pixel loop
 

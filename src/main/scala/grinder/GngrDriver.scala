@@ -42,7 +42,6 @@ import java.io.InputStream
 import java.io.ObjectInputStream
 import java.awt.image.Raster
 import javax.imageio.ImageIO
-import java.io.ByteArrayOutputStream
 import java.io.PipedInputStream
 import java.io.PipedOutputStream
 import java.security.MessageDigest
@@ -203,8 +202,10 @@ class GngrDriver(authKey: String, val profileDir: Option[File] = None) extends W
         val bytes = execute(grinderPort, (writer, is) => {
           writer.write("SCREENSHOT\r\n")
           writer.flush()
-          val fileSize = (new DataInputStream(is)).readInt()
-          val bytes = readInputStream(is, fileSize)
+          val dis = new DataInputStream(is)
+          val fileSize = dis.readInt()
+          val bytes = new Array[Byte](fileSize)
+          dis.readFully(bytes)
           sendAck(writer)
 
           bytes
@@ -221,25 +222,6 @@ class GngrDriver(authKey: String, val profileDir: Option[File] = None) extends W
   private def getConfirmationAndSendAck(is: java.io.InputStream, writer: java.io.OutputStreamWriter) = {
     (new DataInputStream(is)).readInt()
     sendAck(writer)
-  }
-
-  private def readInputStream(is: InputStream, maxSize: Int) = {
-    val buffer = new ByteArrayOutputStream()
-
-    var nRead = 0
-    var countRead = 0
-    val data = new Array[Byte](16384)
-
-    while (countRead < maxSize && nRead != -1) {
-      nRead = is.read(data, 0, data.length)
-      if (nRead != -1) {
-        countRead += nRead
-        buffer.write(data, 0, nRead);
-      }
-    }
-
-    buffer.flush()
-    buffer.toByteArray()
   }
 }
 

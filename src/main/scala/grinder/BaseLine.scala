@@ -10,14 +10,15 @@ class BaseLine(newPathStr: String, basePathStr: String) {
 
   val baseResults = ResultParser.getResults(basePath)
   val (basePassed, baseFailed) = baseResults.partition(_.pass)
+  private val basePassById = baseResults.map(r => r.id -> r.pass).toMap
 
   val newResults = ResultParser.getResults(newPath)
-  val (existingResults, newlyAdded) = newResults.partition(n => baseResults.exists(_.id == n.id))
+  val (existingResults, newlyAdded) = newResults.partition(n => basePassById.contains(n.id))
 
   val (newPassed, newFailed) = existingResults.partition(_.pass)
 
-  val progressions = newPassed.filterNot(n => basePassed.contains(n))
-  val regressions = newFailed.filterNot(n => baseFailed.contains(n))
+  val progressions = newPassed.filter(n => !basePassById(n.id))
+  val regressions = newFailed.filter(n => basePassById(n.id))
 
   def resolveNewScreenshot(id: String) = {
     val s1 = newPath.resolve("screenshots").resolve(id + ".png")

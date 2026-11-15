@@ -29,7 +29,7 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
     options.get("baseLine").map{p =>
       val basePath = Paths.get(p).toAbsolutePath().normalize()
       println("Using baseline: " + basePath)
-      ResultParser.getResults(basePath)
+      ResultParser.getResults(basePath).map(r => r.id -> r).toMap
     }
 
   if (!baseLineResultsOpt.isDefined) {
@@ -124,7 +124,7 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
             fails += 1
           }
 
-          val baseLineResultOpt = baseLineResultsOpt.flatMap(_.find(_.id == result.id))
+          val baseLineResultOpt = baseLineResultsOpt.flatMap(_.get(result.id))
 
           baseLineResultOpt.foreach {blResult =>
             if (same) {

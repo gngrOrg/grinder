@@ -2,6 +2,7 @@ package grinder
 
 import java.awt.image.BufferedImage
 import java.io.File
+import java.nio.file.Files
 
 import javax.imageio.ImageIO
 
@@ -38,7 +39,7 @@ object GrinderUtil {
           }
           val offset = (h - batchStart) * width
           var w = 0
-          while (w < width) {
+          while (w < width && failures < scaledFailureThreshold) {
             val same = isPixelSimilar(testRGBArray(w + offset), refRGBArray(w + offset))
             if (!same) {
               failures += 1
@@ -79,33 +80,8 @@ object GrinderUtil {
     testImage.getWidth == referenceImage.getWidth && testImage.getHeight == referenceImage.getHeight
   }
 
-  import java.io.BufferedInputStream
-  import java.io.FileInputStream
-
   private def isFileContentSame(file1: File, file2: File): Boolean = {
-    if(file1.length != file2.length){
-      false
-    } else {
-
-      val in1 =new BufferedInputStream(new FileInputStream(file1))
-      val in2 =new BufferedInputStream(new FileInputStream(file2))
-
-      var value1 = 0
-      var same = true
-      while (same && value1 >= 0) {
-        //since we're buffered read() isn't expensive
-        value1 = in1.read()
-        val value2 = in2.read()
-        if (value1 != value2) {
-          same = false
-        }
-      }
-
-      in1.close()
-      in2.close()
-
-      same
-    }
+    Files.mismatch(file1.toPath, file2.toPath) == -1L
   }
 
 }

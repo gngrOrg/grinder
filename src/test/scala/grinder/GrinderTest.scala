@@ -404,4 +404,80 @@ class GrinderTest extends AnyFunSpec with Matchers {
     }
   }
 
+  describe("BaseLine") {
+    it("should compute existingResults, newlyAdded, progressions, and regressions") {
+      val tempDir = java.nio.file.Files.createTempDirectory("grinder-baseline-test")
+      try {
+        val baseDir = tempDir.resolve("base")
+        val newDir = tempDir.resolve("new")
+        java.nio.file.Files.createDirectories(baseDir)
+        java.nio.file.Files.createDirectories(newDir)
+
+        val baseJson =
+          """{
+            |  "css21-reftests": {
+            |    "results": [
+            |      {"id": "same-pass.xht", "pass": true},
+            |      {"id": "same-fail.xht", "pass": false},
+            |      {"id": "progressed.xht", "pass": false},
+            |      {"id": "regressed.xht", "pass": true}
+            |    ]
+            |  }
+            |}""".stripMargin
+        val newJson =
+          """{
+            |  "css21-reftests": {
+            |    "results": [
+            |      {"id": "same-pass.xht", "pass": true},
+            |      {"id": "same-fail.xht", "pass": false},
+            |      {"id": "progressed.xht", "pass": true},
+            |      {"id": "regressed.xht", "pass": false},
+            |      {"id": "added.xht", "pass": true}
+            |    ]
+            |  }
+            |}""".stripMargin
+
+        java.nio.file.Files.writeString(baseDir.resolve("results.json"), baseJson)
+        java.nio.file.Files.writeString(newDir.resolve("results.json"), newJson)
+
+        val baseLine = new BaseLine(newDir.toString, baseDir.toString)
+        baseLine.existingResults.map(_.id).toSet should be(Set("same-pass.xht", "same-fail.xht", "progressed.xht", "regressed.xht"))
+        baseLine.newlyAdded.map(_.id) should be(Array("added.xht"))
+        baseLine.progressions.map(_.id) should be(Array("progressed.xht"))
+        baseLine.regressions.map(_.id) should be(Array("regressed.xht"))
+      } finally {
+        better.files.File(tempDir).delete()
+      }
+    }
+  }
+
+  describe("FileUtils") {
+    it("should write bytes only when the file does not exist or its content differs") {
+      val tempDir = java.nio.file.Files.createTempDirectory("grinder-fileutils-test")
+      try {
+        val target = tempDir.resolve("sample.bin")
+        val initialBytes = Array[Byte](1, 2, 3, 4, 5)
+        FileUtils.writeFile(target.toString, initialBytes)
+        java.nio.file.Files.readAllBytes(target) should be(initialBytes)
+
+        val oldTime = java.nio.file.attribute.FileTime.fromMillis(1000000L)
+        java.nio.file.Files.setLastModifiedTime(target, oldTime)
+        FileUtils.writeFile(target.toString, initialBytes.clone())
+        java.nio.file.Files.getLastModifiedTime(target) should be(oldTime)
+        java.nio.file.Files.readAllBytes(target) should be(initialBytes)
+
+        val sameLengthDifferentBytes = Array[Byte](1, 2, 3, 4, 9)
+        FileUtils.writeFile(target.toString, sameLengthDifferentBytes)
+        java.nio.file.Files.readAllBytes(target) should be(sameLengthDifferentBytes)
+        java.nio.file.Files.getLastModifiedTime(target).toMillis should be > oldTime.toMillis
+
+        val updatedBytes = Array[Byte](9, 8, 7)
+        FileUtils.writeFile(target.toString, updatedBytes)
+        java.nio.file.Files.readAllBytes(target) should be(updatedBytes)
+      } finally {
+        better.files.File(tempDir).delete()
+      }
+    }
+  }
+
 }

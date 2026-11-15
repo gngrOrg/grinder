@@ -2,6 +2,10 @@
 
 WebDriver-based CSS2.1 reftest & visual regression harness for `gngr` and `firefox` (Scala 2.13.18, sbt 1.13.1).
 
+## Guidelines
+- When in doubt, ask.
+- Do not inspect any files or processes outside the project directory. If absolutely necessary, explain the reason and plan, and ask before going ahead.
+
 ## Build & Commands
 - `sbt test` — Run ScalaTest suite (`GrinderTest`).
 - `sbt assembly` — Build fat JAR (`target/scala-2.13/grinder-assembly-*.jar`).

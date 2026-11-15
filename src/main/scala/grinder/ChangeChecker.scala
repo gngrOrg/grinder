@@ -86,16 +86,18 @@ class ChangeChecker(args: Seq[String], options: Map[String, String]) {
 
       driver.manage().timeouts().implicitlyWait(20, TimeUnit.SECONDS)
 
-      val pb = new ProgressBar("Test", selectedTests.length)
+      val pb = ProgressBar.builder()
+        .setTaskName("Test")
+        .setInitialMax(selectedTests.length)
+        .build()
       var pbStopped = false
       def stopProgressBar(): Unit = {
         if (!pbStopped) {
           pbStopped = true
-          pb.stop()
+          pb.close()
         }
       }
       try {
-        pb.start()
         timer.start()
         selectedTests.foreach { testFile =>
           val test = (resourceDir / "tests").relativize(testFile).toString
@@ -114,11 +116,13 @@ class ChangeChecker(args: Seq[String], options: Map[String, String]) {
           pb.setExtraMessage("Changes: " + changes)
 
           if (Pause.isPauseRequested) {
+            pb.pause()
             timer.stop()
             printStats()
             println(s"\n${Console.BOLD}Paused, stats written. Type `C` or `c` to continue, anything else to quit.${Console.RESET}")
             val response = io.StdIn.readLine()
             if (response != null && response.matches("[cC]")) {
+              pb.resume()
               timer.start()
               Pause.init()
               println("Continuing")

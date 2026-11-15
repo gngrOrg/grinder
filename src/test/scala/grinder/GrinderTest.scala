@@ -246,11 +246,11 @@ class GrinderTest extends AnyFunSpec with Matchers {
   }
 
   describe("Pause and Quit") {
-    it("should stop the ProgressBar thread when quitting after pause") {
+    it("should cancel the ProgressBar task and not leak non-daemon threads when quitting after pause") {
       import java.awt.image.BufferedImage
       import java.io.{ByteArrayOutputStream, StringReader}
       import java.util.Collections
-      import java.util.concurrent.TimeUnit
+      import java.util.concurrent.{Future => JFuture, ScheduledThreadPoolExecutor, TimeUnit}
       import javax.imageio.ImageIO
       import org.openqa.selenium.{By, Cookie, Dimension, OutputType, Point, TakesScreenshot, WebDriver, WebElement}
       import org.openqa.selenium.logging.Logs
@@ -284,7 +284,14 @@ class GrinderTest extends AnyFunSpec with Matchers {
       }
 
       try {
+        val utilClass = Class.forName("me.tongfei.progressbar.Util")
+        val executorField = utilClass.getDeclaredField("executor")
+        executorField.setAccessible(true)
+        val executor = executorField.get(null).asInstanceOf[ScheduledThreadPoolExecutor]
+
         var threadsDuring = Set.empty[Thread]
+        var activeTasksDuring = Seq.empty[JFuture[_]]
+        var executorActiveDuring = false
 
         val stubDriver: WebDriver with TakesScreenshot = new WebDriver with TakesScreenshot {
           private val imgBytes = {
@@ -325,6 +332,11 @@ class GrinderTest extends AnyFunSpec with Matchers {
             def to(url: java.net.URL): Unit = ()
             def to(url: String): Unit = {
               threadsDuring ++= Thread.getAllStackTraces().keySet().asScala.filter(_.isAlive)
+              val queuedTasks = executor.getQueue.asScala.collect {
+                case f: JFuture[_] if !f.isCancelled && !f.isDone => f
+              }.toSeq
+              activeTasksDuring ++= queuedTasks
+              executorActiveDuring = executorActiveDuring || queuedTasks.nonEmpty || executor.getActiveCount > 0
               if (!pauseFile.exists()) {
                 pauseFile.createNewFile()
               }
@@ -357,15 +369,29 @@ class GrinderTest extends AnyFunSpec with Matchers {
           }
         }
 
-        val spawnedProgressBarThreads = (threadsDuring -- threadsBefore).filter { t =>
-          t.getName.contains("ProgressBar") || !t.isDaemon
+        val progressBarThreadsDuring = threadsDuring.filter(_.getName.contains("ProgressBar"))
+        progressBarThreadsDuring should not be empty
+        progressBarThreadsDuring.foreach(_.isDaemon should be(true))
+        executorActiveDuring should be(true)
+
+        activeTasksDuring.foreach { f =>
+          (f.isCancelled || f.isDone) should be(true)
         }
-        spawnedProgressBarThreads.map(_.getName) should not be empty
-        spawnedProgressBarThreads.filter(_.isAlive) should be(empty)
+        val remainingActiveTasks = executor.getQueue.asScala.filter {
+          case f: JFuture[_] => !f.isCancelled && !f.isDone
+          case _ => true
+        }
+        remainingActiveTasks should be(empty)
+
+        val liveNonDaemonSpawnedThreads = (Thread.getAllStackTraces().keySet().asScala.toSet -- threadsBefore).filter { t =>
+          t.isAlive && !t.isDaemon
+        }
+        liveNonDaemonSpawnedThreads should be(empty)
+
         val liveProgressBarThreads = Thread.getAllStackTraces().keySet().asScala.filter { t =>
           t.isAlive && t.getName.contains("ProgressBar")
         }
-        liveProgressBarThreads should be(empty)
+        liveProgressBarThreads.foreach(_.isDaemon should be(true))
       } finally {
         pauseFile.delete()
         pauseBackup.foreach { backup =>

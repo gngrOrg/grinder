@@ -96,15 +96,18 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
 
       driver.manage().timeouts().implicitlyWait(20, TimeUnit.SECONDS)
 
-      val pb = new ProgressBar("Test", selectedTests.length, 250)
+      val pb = ProgressBar.builder()
+        .setTaskName("Test")
+        .setInitialMax(selectedTests.length)
+        .setUpdateIntervalMillis(250)
+        .build()
       var pbStopped = false
       def stopProgressBar(): Unit = {
         if (!pbStopped) {
           pbStopped = true
-          pb.stop()
+          pb.close()
         }
       }
-      // pb.start()
       try {
         timer.start()
         selectedTests.foreach { test =>
@@ -139,11 +142,13 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
           pb.setExtraMessage("Fails: " + fails + (if (baseLineResultsOpt.isDefined) {" Progs: " + progressions } else ""))
 
           if (Pause.isPauseRequested) {
+            pb.pause()
             timer.stop()
             printStats()
             println(s"\n${Console.BOLD}Paused, stats written. Type `C` or `c` to continue, anything else to quit.${Console.RESET}")
             val response = io.StdIn.readLine()
             if (response != null && response.matches("[cC]")) {
+              pb.resume()
               timer.start()
               Pause.init()
               println("Continuing")

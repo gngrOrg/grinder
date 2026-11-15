@@ -35,4 +35,4 @@ WebDriver-based CSS2.1 reftest & visual regression harness for `gngr` and `firef
 - **Libraries & Idioms**:
   - Scala 2.13 style: singleton `object` utilities, `synchronized` state in `Pause`/`Timer`.
   - JSON via `com.google.gson` (`GsonBuilder`, `JsonObject`, `JsonArray`, `JsonParser`); XML via `scala.xml` literals and `XhtmlParser`; files via `java.nio.file`, `java.io.File`, and `better.files`.
-- **Resource Safety & Testability**: `ProgressBar.stop()` and `driver.quit()` are strictly wrapped in `try / finally` so early exits (`QuitRequestedException`) never leak threads or browser processes. Tests inject stub drivers by overriding `lazy val driver` on `Grinder`.
+- **Resource Safety & Testability**: `ProgressBar.close()` and `driver.quit()` are strictly wrapped in `try / finally` so early exits (`QuitRequestedException`) never leak threads or browser processes. Tests inject stub drivers by overriding `lazy val driver` on `Grinder`.

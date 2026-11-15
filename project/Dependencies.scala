@@ -7,8 +7,7 @@ object Dependencies {
       "org.seleniumhq.selenium" % "selenium-java" % "2.53.1" intransitive(),
       "org.seleniumhq.selenium" % "selenium-firefox-driver" % "2.53.1",
 
-      // jansi is excluded because it clashes with jansi library from scala library during assembly
-      ("me.tongfei" % "progressbar" % "0.7.4").exclude("org.fusesource.jansi", "jansi"),
+      "me.tongfei" % "progressbar" % "0.10.2",
 
       "org.scalatest" %% "scalatest" % "3.2.20",
       "org.scala-lang.modules" %% "scala-xml" % "2.5.0",

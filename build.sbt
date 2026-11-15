@@ -1,7 +1,7 @@
 
 name := "grinder"
 
-version := "1.4.3-dev"
+version := "1.4.3"
 
 scalaVersion := "3.9.0"
 
@@ -9,4 +9,4 @@ scalaVersion := "3.9.0"
 
 libraryDependencies ++= Dependencies.dependencies()
 
-scalacOptions ++= Seq("-opt", "-opt-inline:grinder.**,utils.**,parser.**", "-Wopt:all", "-Wconf:msg=Scala3InlineInfo:s", "-deprecation", "-feature")
+scalacOptions ++= Seq("-opt", "-opt-inline:grinder.**", "-Wopt:all", "-Wconf:msg=Scala3InlineInfo:s", "-deprecation", "-feature")

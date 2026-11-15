@@ -59,7 +59,7 @@ object Boot {
     val dataDirPath = FileSystems.getDefault().getPath(dataDirStr)
     java.nio.file.Files.createDirectories(dataDirPath)
 
-    XmlUtils.saveXmlFile("test-cases",testCaseXml.toString(), dataDirStr)
+    XmlUtils.saveXmlFile("test-cases", testCaseXml, dataDirStr)
 
   }
 

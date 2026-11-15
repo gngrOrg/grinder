@@ -103,8 +103,8 @@ class ChangeChecker(args: Seq[String], options: Map[String, String]) {
           val test = (resourceDir / "tests").relativize(testFile).toString
           val testImage = imageDirectory/(enc(test)+".png")
           val refImage = resourceDir/"screenshot"/(enc(test)+".png")
-          navAndSnap(test)
-          val same = refImage.exists && GrinderUtil.isScreenShotSame(testImage.toJava, refImage.toJava, failureScale)
+          val testBytesOpt = navAndSnap(test)
+          val same = refImage.exists && GrinderUtil.isScreenShotSame(testImage.toJava, refImage.toJava, failureScale, testBytesOpt, None)
           val result = ChangeTestResult(test, !same)
           results +:= result
           if (same) {
@@ -202,21 +202,25 @@ class ChangeChecker(args: Seq[String], options: Map[String, String]) {
 
   private var visited: Set[String] = Set()
 
-  private def navAndSnap(path: String): Unit = {
+  private def navAndSnap(path: String): Option[Array[Byte]] = {
     if (!visited.contains(path)) {
       visited += path
       try {
         navigateToPage("tests/" + path)
-        takeScreenShot(enc(path))
+        Some(takeScreenShot(enc(path)))
       } catch {
-        case wde: WebDriverException => println(s"\nError for $path : ${wde.getMessage}")
+        case wde: WebDriverException =>
+          println(s"\nError for $path : ${wde.getMessage}")
+          None
       }
+    } else {
+      None
     }
   }
 
   private def enc(s: String) = java.net.URLEncoder.encode(s, "UTF-8")
 
-  private def takeScreenShot(name: String): Unit = {
+  private def takeScreenShot(name: String): Array[Byte] = {
     val bytes = driver.getScreenshotAs(OutputType.BYTES)
     val file= imageDirectory / (name + ".png")
     val fos = file.newOutputStream
@@ -225,5 +229,6 @@ class ChangeChecker(args: Seq[String], options: Map[String, String]) {
     } finally {
       fos.close()
     }
+    bytes
   }
 }

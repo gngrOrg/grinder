@@ -3,11 +3,11 @@
 1. [x] Replace O(N) baseline lookup per test in `Grinder.run` with an indexed map
 2. [x] Replace O(N^2) `.exists` and `.contains` scans in `BaseLine` with map/set lookups
 3. [ ] Eliminate O(N^2) DOM queries, linear scans, and per-item DOM appends in `report.html`
-4. [ ] Cache decoded reference images in memory and avoid redundant disk reads after screenshot capture
+4. [x] Cache decoded reference images in memory and avoid redundant disk reads after screenshot capture
 5. [x] Replace single-byte read loops in `GrinderUtil.isFileContentSame` and `FileUtils.writeFile`
 6. [x] Add early exit to the inner pixel comparison loop in `GrinderUtil.isScreenShotSame`
 7. [x] Read screenshots directly into a pre-sized byte array in `GngrDriver.getScreenshotAs`
-8. [ ] Cache loopback `InetAddress` and close streams/sockets safely in `GngrDriver`
+8. [x] Cache loopback `InetAddress` and close streams/sockets safely in `GngrDriver`
 9. [x] Remove XML string round-trip in `Boot.prepare` / `XmlUtils.saveXmlFile` and close `Source` in `loadXmlFromFile`
 10. [ ] Avoid duplicate `\\` traversals and parse flags before other fields in `CssReftestXmlParser`
 11. [ ] Remove duplicate URL encoding in `Grinder` / `ChangeChecker` and O(N^2) list append in `UpdateBaseLine`

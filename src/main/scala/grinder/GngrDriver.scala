@@ -51,6 +51,8 @@ import org.openqa.selenium.Dimension
 class GngrDriver(authKey: String, val profileDir: Option[File] = None) extends WebDriver with TakesScreenshot {
   def this(authKey: String, profileDir: File) = this(authKey, Some(profileDir))
 
+  private val loopbackAddress = InetAddress.getByAddress(Array[Byte](127, 0, 0, 1))
+
   private val gngrWindow = new Window {
     def getPosition(): org.openqa.selenium.Point = ???
     def getSize(): org.openqa.selenium.Dimension = ???
@@ -103,7 +105,11 @@ class GngrDriver(authKey: String, val profileDir: Option[File] = None) extends W
 
     val in = new FileInputStream(portFile)
     val din = new DataInputStream(in)
-    din.readInt()
+    try {
+      din.readInt()
+    } finally {
+      din.close()
+    }
   }
 
   private def getGrinderPort: Int = {
@@ -125,8 +131,7 @@ class GngrDriver(authKey: String, val profileDir: Option[File] = None) extends W
   }
 
   private def getSocket(port: Int) = {
-    val bindHost = InetAddress.getByAddress(Array[Byte](127, 0, 0, 1))
-    val s = new Socket(bindHost, port)
+    val s = new Socket(loopbackAddress, port)
     s.setTcpNoDelay(true)
     s
   }
@@ -145,13 +150,15 @@ class GngrDriver(authKey: String, val profileDir: Option[File] = None) extends W
 
   private def execute[T](port: Int, responseHandler: (OutputStreamWriter, InputStream) => T): T = {
     val socket = getSocket(port)
-    val out = socket.getOutputStream()
-    val is = socket.getInputStream
-    val writer = new OutputStreamWriter(out)
+    try {
+      val out = socket.getOutputStream()
+      val is = socket.getInputStream
+      val writer = new OutputStreamWriter(out)
 
-    val res = responseHandler(writer, is)
-    socket.close()
-    res
+      responseHandler(writer, is)
+    } finally {
+      socket.close()
+    }
   }
 
   def close(): Unit = {

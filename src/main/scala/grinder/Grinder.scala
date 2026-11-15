@@ -113,9 +113,9 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
         selectedTests.foreach { test =>
           val testHref = new File(s"$imageDirectory/${enc(test.testHref)}.png")
           val refHref = new File(s"$imageDirectory/${enc(test.referenceHref)}.png")
-          navAndSnap(test.testHref)
-          navAndSnap(test.referenceHref)
-          val same = GrinderUtil.isScreenShotSame(testHref, refHref, failureScale)
+          val testBytesOpt = navAndSnap(test.testHref)
+          val refBytesOpt = navAndSnap(test.referenceHref)
+          val same = GrinderUtil.isScreenShotSame(testHref, refHref, failureScale, testBytesOpt, refBytesOpt)
           val result = TestResult(test.testHref, same)
           results +:= result
           if (same) {
@@ -239,23 +239,28 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
 
   private var visited: Set[String] = Set()
 
-  private def navAndSnap(path: String): Unit = {
+  private def navAndSnap(path: String): Option[Array[Byte]] = {
     if (!visited.contains(path)) {
       visited += path
       try {
         navigateToPage(path)
-        takeScreenShot(enc(path))
+        Some(takeScreenShot(enc(path)))
       } catch {
-        case wde: WebDriverException => println(s"\nError for $path : ${wde.getMessage}")
+        case wde: WebDriverException =>
+          println(s"\nError for $path : ${wde.getMessage}")
+          None
       }
+    } else {
+      None
     }
   }
 
   private def enc(s: String) = java.net.URLEncoder.encode(s, "UTF-8")
 
-  private def takeScreenShot(name: String): Unit = {
+  private def takeScreenShot(name: String): Array[Byte] = {
     val bytes:Array[Byte] = driver.getScreenshotAs(OutputType.BYTES)
     val fileName = imageDirectory + "/" + name + ".png"
     FileUtils.writeFile(fileName, bytes)
+    bytes
   }
 }

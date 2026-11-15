@@ -46,6 +46,66 @@ class GrinderTest extends AnyFunSpec with Matchers {
       GrinderUtil.isScreenShotSame(testImg, refImg) should be(false)
     }
 
+    it("should support in-memory screenshot comparison and cache/invalidate reference images") {
+      import java.awt.image.BufferedImage
+      import java.io.ByteArrayOutputStream
+      import java.nio.file.Files
+      import javax.imageio.ImageIO
+
+      def makePngBytes(argb: Int): Array[Byte] = {
+        val img = new BufferedImage(8, 8, BufferedImage.TYPE_INT_ARGB)
+        for (y <- 0 until 8; x <- 0 until 8) {
+          img.setRGB(x, y, argb)
+        }
+        val baos = new ByteArrayOutputStream()
+        ImageIO.write(img, "png", baos)
+        baos.toByteArray
+      }
+
+      val greenBytes = makePngBytes(0xff00ff00)
+      val nearGreenBytes = makePngBytes(0xff00fa00)
+      val redBytes = makePngBytes(0xffff0000)
+      val nearRedBytes = makePngBytes(0xfffa0000)
+
+      val tempDir = Files.createTempDirectory("grinder-img-cache-test").toFile
+      try {
+        GrinderUtil.clearRefCache()
+
+        val missingTest = new File(tempDir, "missing-test.png")
+        val missingRef = new File(tempDir, "missing-ref.png")
+        GrinderUtil.isScreenShotSame(missingTest, missingRef, 1d, Some(greenBytes), Some(greenBytes)) should be(true)
+        GrinderUtil.isScreenShotSame(missingTest, missingRef, 1d, Some(greenBytes), Some(nearGreenBytes)) should be(true)
+        GrinderUtil.isScreenShotSame(missingTest, missingRef, 1d, Some(greenBytes), Some(redBytes)) should be(false)
+
+        GrinderUtil.clearRefCache()
+        val refFile = new File(tempDir, "shared-ref.png")
+        Files.write(refFile.toPath, redBytes)
+
+        GrinderUtil.isScreenShotSame(missingTest, refFile, 1d, Some(greenBytes), None) should be(false)
+        GrinderUtil.isRefDecodedCached(refFile) should be(true)
+        GrinderUtil.refCacheHits should be(0L)
+
+        GrinderUtil.isScreenShotSame(missingTest, refFile, 1d, Some(redBytes), None) should be(true)
+        GrinderUtil.refCacheHits should be(1L)
+
+        GrinderUtil.isScreenShotSame(missingTest, refFile, 1d, Some(nearRedBytes), None) should be(true)
+        GrinderUtil.refCacheHits should be(2L)
+
+        val previousMod = refFile.lastModified()
+        Files.write(refFile.toPath, greenBytes)
+        refFile.setLastModified(previousMod + 2000L)
+
+        GrinderUtil.isScreenShotSame(missingTest, refFile, 1d, Some(greenBytes), None) should be(true)
+        GrinderUtil.refCacheHits should be(2L)
+
+        GrinderUtil.isScreenShotSame(missingTest, refFile, 1d, Some(redBytes), None) should be(false)
+        GrinderUtil.refCacheHits should be(3L)
+      } finally {
+        GrinderUtil.clearRefCache()
+        better.files.File(tempDir.toPath).delete()
+      }
+    }
+
   }
 
   describe("Prepare Command") {
@@ -135,6 +195,71 @@ class GrinderTest extends AnyFunSpec with Matchers {
         ex.getMessage should include("port.dat")
       } finally {
         tempDir.delete()
+      }
+    }
+  }
+
+  describe("GngrDriver") {
+    it("should close its socket cleanly when handshake fails") {
+      import java.io.{BufferedReader, DataOutputStream, InputStreamReader}
+      import java.net.{InetAddress, ServerSocket}
+      import java.nio.file.Files
+
+      val tempDir = Files.createTempDirectory("grinder-driver-socket-test").toFile
+      val loopback = InetAddress.getByAddress(Array[Byte](127, 0, 0, 1))
+      val server = new ServerSocket(0, 1, loopback)
+      server.setSoTimeout(5000)
+
+      @volatile var handshakeLine: String = null
+      @volatile var ackLine: String = null
+      @volatile var sawEofAfterClose = false
+      @volatile var serverError: Option[Throwable] = None
+
+      val serverThread = new Thread(() => {
+        try {
+          val client = server.accept()
+          try {
+            client.setSoTimeout(5000)
+            val reader = new BufferedReader(new InputStreamReader(client.getInputStream, "UTF-8"))
+            val dos = new DataOutputStream(client.getOutputStream)
+            handshakeLine = reader.readLine()
+            dos.writeInt(-1)
+            dos.flush()
+            ackLine = reader.readLine()
+            sawEofAfterClose = reader.readLine() == null
+          } finally {
+            client.close()
+          }
+        } catch {
+          case t: Throwable => serverError = Some(t)
+        }
+      })
+      serverThread.setDaemon(true)
+      serverThread.start()
+
+      try {
+        val portFile = new File(tempDir, "port.dat")
+        val portOut = new DataOutputStream(Files.newOutputStream(portFile.toPath))
+        try {
+          portOut.writeInt(server.getLocalPort)
+        } finally {
+          portOut.close()
+        }
+
+        val ex = intercept[InvalidConfigurationException] {
+          new GngrDriver("test-key", tempDir)
+        }
+        ex.getMessage should include("Auth key rejected")
+
+        serverThread.join(5000)
+        serverThread.isAlive should be(false)
+        serverError should be(None)
+        handshakeLine should startWith("GRINDER ")
+        ackLine should be("ACK")
+        sawEofAfterClose should be(true)
+      } finally {
+        server.close()
+        better.files.File(tempDir.toPath).delete()
       }
     }
   }

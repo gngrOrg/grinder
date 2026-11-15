@@ -42,7 +42,7 @@ class ChangeChecker(args: Seq[String], options: Map[String, String]) {
 
   lazy val driver = browserName match {
     case "gngr" => {
-      val keyOpt = (if (args.length > 1) Some(args(1)) else options.get("key")).map(_.trim).filter(_.nonEmpty)
+      val keyOpt = args.lift(1).orElse(options.get("key")).map(_.trim).filter(_.nonEmpty)
       keyOpt match {
         case Some(key) => new GngrDriver(key, profileDirOpt)
         case None => throw new InvalidConfigurationException("Please specify the key")
@@ -71,12 +71,12 @@ class ChangeChecker(args: Seq[String], options: Map[String, String]) {
 
     val testCases =
       (resourceDir / "tests")
-      .collectChildren(c => (!c.isDirectory) && (c.name.endsWith("html") || c.name.endsWith("xht")))(File.VisitOptions.follow)
+      .collectChildren(c => (!c.isDirectory) && (c.name.endsWith("html") || c.name.endsWith("xht")))(using File.VisitOptions.follow)
       .toList
 
     val selectedTests = nameFilterOpt match {
       case Some(nameFilter) =>
-        testCases.filter(_.name contains nameFilter)
+        testCases.filter(_.name.contains(nameFilter))
       case None =>
         testCases
       }

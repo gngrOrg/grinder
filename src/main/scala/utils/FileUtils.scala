@@ -17,15 +17,15 @@ object FileUtils {
 
       val in1 =new BufferedInputStream(new FileInputStream(fileName))
       var count = 0
-      do {
-         //since we're buffered read() isn't expensive
-         val value1 = in1.read()
-         val value2:Byte = bytes(count)
-         count += 1
-         if(value1 < 0 || value1.toByte != value2) {
-           same = false
-         }
-      } while(same && count < bytes.length)
+      while (same && count < bytes.length) {
+        //since we're buffered read() isn't expensive
+        val value1 = in1.read()
+        val value2: Byte = bytes(count)
+        count += 1
+        if (value1 < 0 || value1.toByte != value2) {
+          same = false
+        }
+      }
 
       in1.close()
     }

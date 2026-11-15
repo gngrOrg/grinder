@@ -50,7 +50,7 @@ class CssReftestXmlParser {
           <reference-value>{testCase.refrenceValue}</reference-value>
           <reference-href>{testCase.referenceHref}</reference-href>
           {
-            if (!testCase.flags.isEmpty) {
+            if (testCase.flags.nonEmpty) {
               <flags>
               {
                 testCase.flags.map { flag => <flag>{flag}</flag> }

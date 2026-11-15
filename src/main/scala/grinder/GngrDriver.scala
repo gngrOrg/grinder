@@ -63,25 +63,25 @@ class GngrDriver(authKey: String, val profileDir: Option[File] = None) extends W
       ???
     }
 
-    def setPosition(x$1: org.openqa.selenium.Point): Unit = ???
+    def setPosition(point: org.openqa.selenium.Point): Unit = ???
     def setSize(dim: Dimension): Unit = {
       execute(grinderPort, s"SET_SIZE ${dim.getWidth} ${dim.getHeight}")
     }
   }
 
   private val gngrTimeouts = new Timeouts {
-    def implicitlyWait(x$1: Long, x$2: TimeUnit): Timeouts = this
-    def pageLoadTimeout(x$1: Long, x$2: TimeUnit): Timeouts = this
-    def setScriptTimeout(x$1: Long, x$2: TimeUnit): Timeouts = this
+    def implicitlyWait(time: Long, unit: TimeUnit): Timeouts = this
+    def pageLoadTimeout(time: Long, unit: TimeUnit): Timeouts = this
+    def setScriptTimeout(time: Long, unit: TimeUnit): Timeouts = this
   }
 
   private val options = new Options {
 
-    def addCookie(x$1: Cookie): Unit = ???
+    def addCookie(cookie: Cookie): Unit = ???
     def deleteAllCookies(): Unit = ???
-    def deleteCookie(x$1: Cookie): Unit = ???
-    def deleteCookieNamed(x$1: String): Unit = ???
-    def getCookieNamed(x$1: String): Cookie = ???
+    def deleteCookie(cookie: Cookie): Unit = ???
+    def deleteCookieNamed(name: String): Unit = ???
+    def getCookieNamed(name: String): Cookie = ???
     def getCookies(): java.util.Set[Cookie] = ???
     def ime(): ImeHandler = ???
     def logs(): Logs = ???
@@ -159,9 +159,9 @@ class GngrDriver(authKey: String, val profileDir: Option[File] = None) extends W
     execute(grinderPort, "CLOSE", ack = false)
   }
 
-  def findElement(x$1: org.openqa.selenium.By): org.openqa.selenium.WebElement = ???
-  def findElements(x$1: org.openqa.selenium.By): java.util.List[org.openqa.selenium.WebElement] = ???
-  def get(x$1: String): Unit = ???
+  def findElement(by: org.openqa.selenium.By): org.openqa.selenium.WebElement = ???
+  def findElements(by: org.openqa.selenium.By): java.util.List[org.openqa.selenium.WebElement] = ???
+  def get(url: String): Unit = ???
   def getCurrentUrl(): String = ???
   def getPageSource(): String = ???
   def getTitle(): String = ???

@@ -50,7 +50,7 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
 
   lazy val driver = browserName match {
     case "gngr" => {
-      val keyOpt = (if (args.length > 1) Some(args(1)) else options.get("key")).map(_.trim).filter(_.nonEmpty)
+      val keyOpt = args.lift(1).orElse(options.get("key")).map(_.trim).filter(_.nonEmpty)
       keyOpt match {
         case Some(key) => new GngrDriver(key, profileDirOpt)
         case None => throw new InvalidConfigurationException("Please specify the key")
@@ -84,7 +84,7 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
     val testCases = parser.parserTests
     val filteredTests = hrefFilterOpt match {
       case Some(hrefFilter) =>
-        testCases.filter(_.testHref contains hrefFilter)
+        testCases.filter(_.testHref.contains(hrefFilter))
       case None =>
         testCases
       }
@@ -124,11 +124,7 @@ class Grinder(args: Seq[String], options: Map[String, String]) {
             fails += 1
           }
 
-          val baseLineResultOpt = baseLineResultsOpt match {
-            case Some(baseLineResults) =>
-              baseLineResults.find(_.id == result.id)
-            case _ => None
-          }
+          val baseLineResultOpt = baseLineResultsOpt.flatMap(_.find(_.id == result.id))
 
           baseLineResultOpt.foreach {blResult =>
             if (same) {

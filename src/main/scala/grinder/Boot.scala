@@ -4,39 +4,41 @@ import java.io.File
 import java.nio.file._
 import org.openqa.selenium.OutputType
 
-object Boot extends App {
+object Boot {
   lazy val UserDir = {
     val UserDirProperty = System.getProperty("user.dir")
     if (UserDirProperty == null) "" else UserDirProperty
   }
 
-  if (args.length < 1) {
-    println("Please provide a command:")
-    println("  prepare [inputDir]")
-    println("  compare <browserName> [key] [--profileDir=<path>] [--reportDir=<path>]")
-    System.exit(1)
-  }
-
-  private val command = args(0)
-  try {
-    command match {
-      case "prepare" =>
-        val (argsRem, optionsMap) = separateArgsOptions(args.tail)
-        val inputDir = optionsMap.get("inputDir")
-          .orElse(optionsMap.get("input-dir"))
-          .map(_.trim)
-          .filter(_.nonEmpty)
-          .orElse(argsRem.headOption)
-          .getOrElse("nightly-unstable")
-        prepare(inputDir)
-      case "compare" => compare()
-      case "checkChange" => checkChange()
-      case "updateBase" => UpdateBaseLine.update(args.tail)
-      case "checkBase" => CheckBaseLine.check(args.tail)
-      case "benchmark" => benchmark()
+  def main(args: Array[String]): Unit = {
+    if (args.length < 1) {
+      println("Please provide a command:")
+      println("  prepare [inputDir]")
+      println("  compare <browserName> [key] [--profileDir=<path>] [--reportDir=<path>]")
+      System.exit(1)
     }
-  } catch {
-    case te: TestException => println(te.summary)
+
+    val command = args(0)
+    try {
+      command match {
+        case "prepare" =>
+          val (argsRem, optionsMap) = separateArgsOptions(args.tail)
+          val inputDir = optionsMap.get("inputDir")
+            .orElse(optionsMap.get("input-dir"))
+            .map(_.trim)
+            .filter(_.nonEmpty)
+            .orElse(argsRem.headOption)
+            .getOrElse("nightly-unstable")
+          prepare(inputDir)
+        case "compare" => compare(args.tail)
+        case "checkChange" => checkChange(args.tail)
+        case "updateBase" => UpdateBaseLine.update(args.tail)
+        case "checkBase" => CheckBaseLine.check(args.tail)
+        case "benchmark" => benchmark(args.tail)
+      }
+    } catch {
+      case te: TestException => println(te.summary)
+    }
   }
 
   def prepare(inputDir: String = "nightly-unstable"): Unit = {
@@ -61,8 +63,8 @@ object Boot extends App {
 
   }
 
-  def compare(): Unit = {
-    val (argsRem, optionsMap) = separateArgsOptions(args.tail)
+  def compare(args: Array[String]): Unit = {
+    val (argsRem, optionsMap) = separateArgsOptions(args)
     if (argsRem.nonEmpty) {
       val cssTest = new Grinder(argsRem, optionsMap)
       cssTest.run()
@@ -72,8 +74,8 @@ object Boot extends App {
     }
   }
 
-  def checkChange(): Unit = {
-    val (argsRem, optionsMap) = separateArgsOptions(args.tail)
+  def checkChange(args: Array[String]): Unit = {
+    val (argsRem, optionsMap) = separateArgsOptions(args)
     if (argsRem.nonEmpty) {
       val changeTestChecker = new ChangeChecker(argsRem, optionsMap)
       changeTestChecker.run()
@@ -83,8 +85,8 @@ object Boot extends App {
     }
   }
 
-  def benchmark(): Unit = {
-    val (argsRem, optionsMap) = separateArgsOptions(args.tail)
+  def benchmark(args: Array[String]): Unit = {
+    val (argsRem, optionsMap) = separateArgsOptions(args)
     if (argsRem.nonEmpty) {
       val keyOpt = optionsMap.get("key").map(_.trim).filter(_.nonEmpty)
       val profileDirOpt = GngrDriver.extractProfileDir(optionsMap)

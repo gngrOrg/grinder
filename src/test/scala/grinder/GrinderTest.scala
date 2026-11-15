@@ -263,11 +263,11 @@ class GrinderTest extends AnyFunSpec with Matchers {
       val resultsJsonExisted = resultsJsonFile.exists()
       val testCasesExisted = testCasesFile.exists()
       val pauseFile = new File(Pause.pauseFileLocation)
-      val pauseBackup = if (pauseFile.exists()) {
+      val pauseBackup = Option.when(pauseFile.exists()) {
         val backup = java.nio.file.Files.createTempFile("grinder-pause-backup", ".tmp")
         java.nio.file.Files.move(pauseFile.toPath, backup, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
-        Some(backup)
-      } else None
+        backup
+      }
 
       if (!testCasesExisted || (scala.xml.XML.loadFile(testCasesFile) \\ "test").isEmpty) {
         dataDir.mkdirs()
@@ -290,10 +290,10 @@ class GrinderTest extends AnyFunSpec with Matchers {
         val executor = executorField.get(null).asInstanceOf[ScheduledThreadPoolExecutor]
 
         var threadsDuring = Set.empty[Thread]
-        var activeTasksDuring = Seq.empty[JFuture[_]]
+        var activeTasksDuring = Seq.empty[JFuture[?]]
         var executorActiveDuring = false
 
-        val stubDriver: WebDriver with TakesScreenshot = new WebDriver with TakesScreenshot {
+        val stubDriver: WebDriver & TakesScreenshot = new WebDriver with TakesScreenshot {
           private val imgBytes = {
             val img = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB)
             val baos = new ByteArrayOutputStream()
@@ -333,7 +333,7 @@ class GrinderTest extends AnyFunSpec with Matchers {
             def to(url: String): Unit = {
               threadsDuring ++= Thread.getAllStackTraces().keySet().asScala.filter(_.isAlive)
               val queuedTasks = executor.getQueue.asScala.collect {
-                case f: JFuture[_] if !f.isCancelled && !f.isDone => f
+                case f: JFuture[?] if !f.isCancelled && !f.isDone => f
               }.toSeq
               activeTasksDuring ++= queuedTasks
               executorActiveDuring = executorActiveDuring || queuedTasks.nonEmpty || executor.getActiveCount > 0
@@ -359,7 +359,7 @@ class GrinderTest extends AnyFunSpec with Matchers {
         }
 
         val grinder = new Grinder(Seq("gngr", "test-key"), Map("reportDir" -> tempReportDir.toString)) {
-          override lazy val driver: WebDriver with TakesScreenshot = stubDriver
+          override lazy val driver: WebDriver & TakesScreenshot = stubDriver
         }
 
         val threadsBefore = Thread.getAllStackTraces().keySet().asScala.toSet
@@ -378,7 +378,7 @@ class GrinderTest extends AnyFunSpec with Matchers {
           (f.isCancelled || f.isDone) should be(true)
         }
         val remainingActiveTasks = executor.getQueue.asScala.filter {
-          case f: JFuture[_] => !f.isCancelled && !f.isDone
+          case f: JFuture[?] => !f.isCancelled && !f.isDone
           case _ => true
         }
         remainingActiveTasks should be(empty)

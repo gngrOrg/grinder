@@ -91,19 +91,20 @@ object GrinderUtil {
       val in2 =new BufferedInputStream(new FileInputStream(file2))
 
       var value1 = 0
-      do {
-         //since we're buffered read() isn't expensive
-         value1 = in1.read()
-         val value2 = in2.read()
-         if(value1 !=value2) {
-           return false
-         }
-      } while(value1 >=0)
+      var same = true
+      while (same && value1 >= 0) {
+        //since we're buffered read() isn't expensive
+        value1 = in1.read()
+        val value2 = in2.read()
+        if (value1 != value2) {
+          same = false
+        }
+      }
 
       in1.close()
       in2.close()
 
-      true
+      same
     }
   }
 

@@ -53,9 +53,9 @@ object UpdateBaseLine {
       if (regressions.length > 0) {
         var copied = Seq[ResultParser.TestResult]()
         var continue = true
-        var i = 0
-        while (continue && i < regressions.length) {
-          val r = regressions(i)
+        val iter = regressions.iterator
+        while (continue && iter.hasNext) {
+          val r = iter.next()
           println(s"regressions: $r [yY] to copy files from new to baseline. [sS] to Skip. Anything else to quit")
           val response = io.StdIn.readLine()
           if (response.matches("[yY]")) {
@@ -68,8 +68,6 @@ object UpdateBaseLine {
           } else {
             continue = false
           }
-
-          i += 1
         }
         println("Copied:\n" + copied.mkString("\n"))
       }

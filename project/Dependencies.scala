@@ -11,7 +11,7 @@ object Dependencies {
 
       "org.scalatest" %% "scalatest" % "3.2.20",
       "org.scala-lang.modules" %% "scala-xml" % "2.5.0",
-      "com.github.pathikrit" %% "better-files" % "3.8.0"
+      "com.github.pathikrit" %% "better-files" % "3.9.2"
     )
   }
 }

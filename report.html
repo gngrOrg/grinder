@@ -194,7 +194,7 @@ async function getData(type, url, callback) {
     var p = i.path ? (i.path.endsWith("/") ? i.path : i.path + "/") : "";
     var enc = safeEncode(i.href);
     var tip = i.type ? (i.type + ": " + p + i.href) : (p + i.href);
-    return `<a target="_blank" title="${tip}" href="${"nightly-unstable/xhtml1/" + i.href}"><img title="${tip}" alt="${i.type || ''}" src="${p}screenshots/${enc}.png" onerror="if(!this.dataset.fallback){this.dataset.fallback=1;this.src='${p}screenshot/${enc}.png';}" /></a>`;
+    return `<a target="_blank" title="${tip}" href="${"/nightly-unstable/xhtml1/" + i.href}"><img title="${tip}" alt="${i.type || ''}" src="${p}screenshots/${enc}.png" onerror="if(!this.dataset.fallback){this.dataset.fallback=1;this.src='${p}screenshot/${enc}.png';}" /></a>`;
   }
 
   function showDetails(imgs, note) {

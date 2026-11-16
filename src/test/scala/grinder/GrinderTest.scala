@@ -723,10 +723,174 @@ class GrinderTest extends AnyFunSpec with Matchers {
         new String(Files.readAllBytes(baseShots.resolve("reg2.xht.png")), "UTF-8") should be("base-reg2.xht")
         new String(Files.readAllBytes(baseShots.resolve("reg3.xht.png")), "UTF-8") should be("new-reg3.xht")
 
+        val updatedBaseResults = ResultParser.getResults(baseDir).map(r => r.id -> r.pass).toMap
+        updatedBaseResults("reg1.xht") should be(false)
+        updatedBaseResults("reg2.xht") should be(true)
+        updatedBaseResults("reg3.xht") should be(false)
+
         val output = outBytes.toString("UTF-8")
         output should include("Copied:\nTestResult(false,reg1.xht)\nTestResult(false,reg3.xht)")
       } finally {
         better.files.File(tempDir).delete()
+      }
+    }
+
+    it("should resolve and copy URL-encoded screenshots and update results.json across newlyAdded, progressions, and regressions") {
+      import java.io.{ByteArrayOutputStream, PrintStream, StringReader}
+      import java.net.URLEncoder
+      import java.nio.file.Files
+      import com.google.gson.JsonParser
+
+      val tempDir = Files.createTempDirectory("grinder-encoded-baseline-test")
+      try {
+        val baseDir = tempDir.resolve("base")
+        val newDir = tempDir.resolve("new")
+        val baseShots = baseDir.resolve("screenshots")
+        val newShots = newDir.resolve("screenshots")
+        Files.createDirectories(baseShots)
+        Files.createDirectories(newShots)
+
+        val addedId = "support/added test.xht"
+        val progressedId = "chapter-1/progressed.xht"
+        val regressedId = "chapter-2/regressed.xht"
+
+        val baseJson =
+          s"""{
+             |  "css21-reftests": {
+             |    "selectedCount": 2,
+             |    "results": [
+             |      {"id": "$progressedId", "pass": false},
+             |      {"id": "$regressedId", "pass": true}
+             |    ]
+             |  }
+             |}""".stripMargin
+        val newJson =
+          s"""{
+             |  "css21-reftests": {
+             |    "selectedCount": 3,
+             |    "results": [
+             |      {"id": "$progressedId", "pass": true},
+             |      {"id": "$regressedId", "pass": false},
+             |      {"id": "$addedId", "pass": true}
+             |    ]
+             |  }
+             |}""".stripMargin
+
+        Files.writeString(baseDir.resolve("results.json"), baseJson)
+        Files.writeString(newDir.resolve("results.json"), newJson)
+
+        def encName(id: String): String = URLEncoder.encode(id, "UTF-8") + ".png"
+
+        Files.write(baseShots.resolve(encName(progressedId)), "base-prog".getBytes("UTF-8"))
+        Files.write(baseShots.resolve(encName(regressedId)), "base-reg".getBytes("UTF-8"))
+        Files.write(newShots.resolve(encName(addedId)), "new-added".getBytes("UTF-8"))
+        Files.write(newShots.resolve(encName(progressedId)), "new-prog".getBytes("UTF-8"))
+        Files.write(newShots.resolve(encName(regressedId)), "new-reg".getBytes("UTF-8"))
+
+        val baseLine = new BaseLine(newDir.toString, baseDir.toString)
+        baseLine.resolveNewScreenshot(addedId) should be(newShots.resolve(encName(addedId)))
+        baseLine.resolveBaseScreenshot(addedId) should be(baseShots.resolve(encName(addedId)))
+        baseLine.resolveBaseScreenshot(progressedId) should be(baseShots.resolve(encName(progressedId)))
+
+        val outBytes = new ByteArrayOutputStream()
+        val outStream = new PrintStream(outBytes, true, "UTF-8")
+        try {
+          scala.Console.withOut(outStream) {
+            scala.Console.withIn(new StringReader("y\ny\ny\n")) {
+              UpdateBaseLine.update(Array(newDir.toString, baseDir.toString))
+            }
+          }
+        } finally {
+          outStream.close()
+        }
+
+        new String(Files.readAllBytes(baseShots.resolve(encName(addedId))), "UTF-8") should be("new-added")
+        new String(Files.readAllBytes(baseShots.resolve(encName(progressedId))), "UTF-8") should be("new-prog")
+        new String(Files.readAllBytes(baseShots.resolve(encName(regressedId))), "UTF-8") should be("new-reg")
+
+        val updatedJson = new JsonParser().parse(Files.readString(baseDir.resolve("results.json"))).getAsJsonObject
+        updatedJson.getAsJsonObject("css21-reftests").get("selectedCount").getAsInt should be(3)
+
+        val afterUpdate = new BaseLine(newDir.toString, baseDir.toString)
+        afterUpdate.newlyAdded should be(empty)
+        afterUpdate.progressions should be(empty)
+        afterUpdate.regressions should be(empty)
+      } finally {
+        better.files.File(tempDir).delete()
+      }
+    }
+
+    it("should update all screenshots and results.json non-interactively with --yes and --all") {
+      import java.io.{ByteArrayOutputStream, PrintStream, StringReader}
+      import java.net.URLEncoder
+      import java.nio.file.Files
+
+      Seq("--yes", "--all").foreach { flag =>
+        val tempDir = Files.createTempDirectory(s"grinder-auto-yes-test-${flag.stripPrefix("--")}")
+        try {
+          val baseDir = tempDir.resolve("base")
+          val newDir = tempDir.resolve("new")
+          val newShots = newDir.resolve("screenshots")
+          Files.createDirectories(baseDir)
+          Files.createDirectories(newShots)
+
+          val addedId = "dir/added.xht"
+          val progressedId = "dir/progressed.xht"
+          val regressedId = "dir/regressed.xht"
+
+          val baseJson =
+            s"""{
+               |  "css21-reftests": {
+               |    "results": [
+               |      {"id": "$progressedId", "pass": false},
+               |      {"id": "$regressedId", "pass": true}
+               |    ]
+               |  }
+               |}""".stripMargin
+          val newJson =
+            s"""{
+               |  "css21-reftests": {
+               |    "results": [
+               |      {"id": "$progressedId", "pass": true},
+               |      {"id": "$regressedId", "pass": false},
+               |      {"id": "$addedId", "pass": true}
+               |    ]
+               |  }
+               |}""".stripMargin
+
+          Files.writeString(baseDir.resolve("results.json"), baseJson)
+          Files.writeString(newDir.resolve("results.json"), newJson)
+
+          def encName(id: String): String = URLEncoder.encode(id, "UTF-8") + ".png"
+
+          Files.write(newShots.resolve(encName(addedId)), "new-added".getBytes("UTF-8"))
+          Files.write(newShots.resolve(encName(progressedId)), "new-prog".getBytes("UTF-8"))
+          Files.write(newShots.resolve(encName(regressedId)), "new-reg".getBytes("UTF-8"))
+
+          val outBytes = new ByteArrayOutputStream()
+          val outStream = new PrintStream(outBytes, true, "UTF-8")
+          try {
+            scala.Console.withOut(outStream) {
+              scala.Console.withIn(new StringReader("")) {
+                UpdateBaseLine.update(Array(newDir.toString, baseDir.toString, flag))
+              }
+            }
+          } finally {
+            outStream.close()
+          }
+
+          val baseShots = baseDir.resolve("screenshots")
+          new String(Files.readAllBytes(baseShots.resolve(encName(addedId))), "UTF-8") should be("new-added")
+          new String(Files.readAllBytes(baseShots.resolve(encName(progressedId))), "UTF-8") should be("new-prog")
+          new String(Files.readAllBytes(baseShots.resolve(encName(regressedId))), "UTF-8") should be("new-reg")
+
+          val afterUpdate = new BaseLine(newDir.toString, baseDir.toString)
+          afterUpdate.newlyAdded should be(empty)
+          afterUpdate.progressions should be(empty)
+          afterUpdate.regressions should be(empty)
+        } finally {
+          better.files.File(tempDir).delete()
+        }
       }
     }
   }

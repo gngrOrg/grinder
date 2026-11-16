@@ -1,5 +1,7 @@
 package grinder
 
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.nio.file._
 
 class BaseLine(newPathStr: String, basePathStr: String) {
@@ -20,13 +22,27 @@ class BaseLine(newPathStr: String, basePathStr: String) {
   val progressions = newPassed.filter(n => !basePassById(n.id))
   val regressions = newFailed.filter(n => basePassById(n.id))
 
-  def resolveNewScreenshot(id: String) = {
-    val s1 = newPath.resolve("screenshots").resolve(id + ".png")
-    if (Files.exists(s1)) s1 else newPath.resolve("screenshot").resolve(id + ".png")
+  private def resolveScreenshot(rootPath: Path, id: String): Path = {
+    val encodedName = URLEncoder.encode(id, StandardCharsets.UTF_8.name()) + ".png"
+    val rawName = id + ".png"
+    val candidates = Seq(
+      rootPath.resolve("screenshots").resolve(encodedName),
+      rootPath.resolve("screenshot").resolve(encodedName),
+      rootPath.resolve("screenshots").resolve(rawName),
+      rootPath.resolve("screenshot").resolve(rawName)
+    )
+    candidates.find(Files.exists(_)).getOrElse {
+      if (Files.isDirectory(rootPath.resolve("screenshots"))) {
+        rootPath.resolve("screenshots").resolve(encodedName)
+      } else if (Files.isDirectory(rootPath.resolve("screenshot"))) {
+        rootPath.resolve("screenshot").resolve(encodedName)
+      } else {
+        rootPath.resolve("screenshots").resolve(encodedName)
+      }
+    }
   }
 
-  def resolveBaseScreenshot(id: String) = {
-    val s1 = basePath.resolve("screenshots").resolve(id + ".png")
-    if (Files.exists(s1)) s1 else basePath.resolve("screenshot").resolve(id + ".png")
-  }
+  def resolveNewScreenshot(id: String): Path = resolveScreenshot(newPath, id)
+
+  def resolveBaseScreenshot(id: String): Path = resolveScreenshot(basePath, id)
 }

@@ -39,11 +39,27 @@ object UpdateBaseLine {
     }
   }
 
+  /** Prints usage help for the `updateBase` command. */
+  def printHelp(): Unit = {
+    println("Usage: updateBase <newDir> <baseDir> [--yes|--all]")
+    println("  <newDir>      Path to the new test run directory containing results.json and screenshots/")
+    println("  <baseDir>     Path to the baseline directory to update")
+    println("  --yes, --all  Accept and copy all newlyAdded, progressions, and regressions without prompting")
+  }
+
   /** Updates baseline screenshots and `results.json` from a newer test run (`--yes` / `--all` skips prompts). */
   def update(args: Array[String]): Unit = {
     val (argsRem, optionsMap) = Boot.separateArgsOptions(args)
-    val autoYes = optionsMap.contains("yes") || optionsMap.contains("all")
-    val baseLine = new BaseLine(argsRem(0), argsRem(1))
+    if (argsRem.length < 2 || optionsMap.contains("help")) {
+      printHelp()
+    } else {
+      val autoYes = optionsMap.contains("yes") || optionsMap.contains("all")
+      runUpdate(argsRem(0), argsRem(1), autoYes)
+    }
+  }
+
+  private def runUpdate(newPathStr: String, basePathStr: String, autoYes: Boolean): Unit = {
+    val baseLine = new BaseLine(newPathStr, basePathStr)
 
     val numBasePassed = baseLine.basePassed.length
     val numBaseFailed = baseLine.baseFailed.length

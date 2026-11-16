@@ -47,6 +47,38 @@ When running with `gngr`, you need to set it up first:
    * Optionally specify the report output directory with `--reportDir=<path>`. Default is `$PWD/grinder-report/`. A timestamped folder will be created inside with `report.html`, `reportChanges.html`, `results.json`, and the `screenshots/` directory. For example: `sbt "run compare gngr xyz --reportDir=/path/to/artifacts"`
 
 
+## Checking and updating the baseline
+
+You can pass `--baseLine=<path>` to `compare` to check a test run against an existing baseline run directory (for example, `./grinder-report/<yyyyMMdd-HHmmss>`):
+
+```
+sbt "run compare gngr xyz --baseLine=/path/to/baseline"
+```
+
+To check a completed test run against a baseline (for example, in CI):
+
+```
+sbt "run checkBase <newDir> <baseDir>"
+```
+
+This compares `<newDir>/results.json` against `<baseDir>/results.json`, prints the count and test IDs of all `progressions` and `regressions`, and exits with status code `1` if one or more regressions are found (and `0` otherwise).
+
+To update an existing baseline directory from the results of a newer test run:
+
+```
+sbt "run updateBase <newDir> <baseDir>"
+```
+
+This compares `<newDir>/results.json` against `<baseDir>/results.json`, prompts you to accept `newlyAdded`, `progressions`, and individual `regressions`, copies the accepted screenshots (handling URL-encoded filenames) into `<baseDir>`, and updates `<baseDir>/results.json`.
+
+To accept and apply all changes non-interactively without prompting, pass `--yes` or `--all`:
+
+```
+sbt "run updateBase <newDir> <baseDir> --yes"
+```
+
+Running `sbt "run updateBase"` with no arguments (or `--help`) displays usage help.
+
 ## Pausing the tests
 
 ```

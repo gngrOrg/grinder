@@ -15,6 +15,7 @@ object Boot {
       println("Please provide a command:")
       println("  prepare [inputDir]")
       println("  compare <browserName> [key] [--profileDir=<path>] [--reportDir=<path>]")
+      println("  updateBase <newDir> <baseDir> [--yes|--all]")
       System.exit(1)
     }
 

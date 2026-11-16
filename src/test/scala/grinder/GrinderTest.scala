@@ -893,6 +893,29 @@ class GrinderTest extends AnyFunSpec with Matchers {
         }
       }
     }
+
+    it("should show help when UpdateBaseLine.update is called with insufficient arguments or --help") {
+      import java.io.{ByteArrayOutputStream, PrintStream}
+
+      Seq(
+        Array.empty[String],
+        Array("only-one-arg"),
+        Array("new-dir", "base-dir", "--help")
+      ).foreach { args =>
+        val outBytes = new ByteArrayOutputStream()
+        val outStream = new PrintStream(outBytes, true, "UTF-8")
+        try {
+          scala.Console.withOut(outStream) {
+            UpdateBaseLine.update(args)
+          }
+        } finally {
+          outStream.close()
+        }
+        val output = outBytes.toString("UTF-8")
+        output should include("Usage: updateBase <newDir> <baseDir> [--yes|--all]")
+        output should include("--yes, --all")
+      }
+    }
   }
 
   describe("FileUtils") {

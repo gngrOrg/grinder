@@ -947,4 +947,66 @@ class GrinderTest extends AnyFunSpec with Matchers {
     }
   }
 
+  describe("CLI help") {
+    def captureStdout(block: => Unit): String = {
+      import java.io.{ByteArrayOutputStream, PrintStream}
+      val outBytes = new ByteArrayOutputStream()
+      val outStream = new PrintStream(outBytes, true, "UTF-8")
+      try {
+        scala.Console.withOut(outStream) {
+          block
+        }
+      } finally {
+        outStream.close()
+      }
+      outBytes.toString("UTF-8")
+    }
+
+    it("should list all commands and options in Boot.printHelp and Boot.main(--help)") {
+      Seq(
+        captureStdout(Boot.printHelp()),
+        captureStdout(Boot.main(Array("--help")))
+      ).foreach { output =>
+        output should include("prepare")
+        output should include("compare")
+        output should include("checkChange")
+        output should include("checkBase")
+        output should include("updateBase")
+        output should include("benchmark")
+        output should include("--hrefFilter")
+        output should include("--nameFilter")
+        output should include("--failureScale")
+        output should include("--quitOnRegress")
+        output should include("--quitOnChange")
+      }
+    }
+
+    it("should show command-specific help when no args or --help are passed") {
+      val prepareHelp = captureStdout(Boot.main(Array("prepare", "--help")))
+      prepareHelp should include("Usage: prepare")
+      prepareHelp should include("--inputDir")
+
+      Seq(Array.empty[String], Array("--help")).foreach { args =>
+        val compareOut = captureStdout(Boot.compare(args))
+        compareOut should include("Usage: compare")
+        compareOut should include("--hrefFilter")
+        compareOut should include("--failureScale")
+        compareOut should include("--quitOnRegress")
+
+        val checkChangeOut = captureStdout(Boot.checkChange(args))
+        checkChangeOut should include("Usage: checkChange")
+        checkChangeOut should include("--nameFilter")
+        checkChangeOut should include("--failureScale")
+        checkChangeOut should include("--quitOnChange")
+
+        val benchmarkOut = captureStdout(Boot.benchmark(args))
+        benchmarkOut should include("Usage: benchmark")
+        benchmarkOut should include("--key=<key>")
+
+        val checkBaseOut = captureStdout(CheckBaseLine.check(args))
+        checkBaseOut should include("Usage: checkBase")
+      }
+    }
+  }
+
 }

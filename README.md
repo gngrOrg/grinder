@@ -23,17 +23,16 @@ On `gngr` side, we are implementing a subset of the WebDriver protocol and will 
 ## Preparing the tests
 
 ```
-sbt run prepare [inputDir]
+sbt "run prepare [inputDir]"
 ```
 
-This will parse and filter the tests from the css2.1 reference TOC (default input directory is `nightly-unstable`). The details of the filtered tests are then
-stored in `data/test-cases.xml`.
+This will parse and filter the tests from `<inputDir>/reftest-toc.xht` (or `<inputDir>/xhtml1/reftest-toc.xht`; default input directory is `nightly-unstable`). You can also specify the directory with `--inputDir=<path>` or `--input-dir=<path>`. The details of the filtered tests are then stored in `data/test-cases.xml`.
 
 
 ## Running the tests
 
 ```
-sbt run compare <browser-name> <auth-key-for-gngr>
+sbt "run compare <browser-name> [auth-key-for-gngr] [options]"
 ```
 
 where `browser-name` can be either `firefox` or `gngr`.
@@ -42,9 +41,42 @@ This will open a new browser window, navigate to the tests and their references,
 
 When running with `gngr`, you need to set it up first:
    * Start `gngr` with the `-grinder-key=xyz` flag (substitute `xyz` with any key of your choice).
-   * Provide the same key to the grinder run. For example: `sbt run compare gngr xyz`
+   * Provide the same key to the grinder run, either positionally or with `--key=<auth-key>`. For example: `sbt "run compare gngr xyz"`
    * Optionally specify the profile directory with `--profileDir=<path>` (or `--profile=<name>`). For example: `sbt "run compare gngr xyz --profileDir=/path/to/profile"`
-   * Optionally specify the report output directory with `--reportDir=<path>`. Default is `$PWD/grinder-report/`. A timestamped folder will be created inside with `report.html`, `reportChanges.html`, `results.json`, and the `screenshots/` directory. For example: `sbt "run compare gngr xyz --reportDir=/path/to/artifacts"`
+   * Optionally specify the report output directory with `--reportDir=<path>` (or `--report-dir=<path>`). Default is `$PWD/grinder-report/`. A timestamped folder will be created inside with `report.html`, `reportChanges.html`, `results.json`, and the `screenshots/` directory. For example: `sbt "run compare gngr xyz --reportDir=/path/to/artifacts"`
+
+Additional options for `compare`:
+   * `--hrefFilter=<substring>`: Only run tests whose `href` contains `<substring>`.
+   * `--failureScale=<number>`: Scale factor (default `1.0`) for the pixel-difference failure threshold (`25 * failureScale` differing pixels).
+   * `--quitOnRegress`: Stop the test run immediately when a regression against `--baseLine` is encountered.
+
+
+## Checking for visual changes
+
+```
+sbt "run checkChange <browser-name> [auth-key-for-gngr] [options]"
+```
+
+where `browser-name` can be either `firefox` or `gngr`.
+
+This navigates to `.html` and `.xht` test pages under `changeTests/tests/` (served at `localhost:8000`) and compares their screenshots against reference screenshots in `changeTests/screenshot/`, writing `results.json` and `screenshots/` to the report directory.
+
+Options for `checkChange`:
+   * `--key=<auth-key>`: Auth key for `gngr` (alternative to the positional key argument).
+   * `--profileDir=<path>` / `--profile=<name>`: Profile directory or name under `~/.gngr/`.
+   * `--reportDir=<path>` / `--report-dir=<path>`: Report output directory (default `$PWD/grinder-report/`).
+   * `--nameFilter=<substring>`: Only run tests whose filename contains `<substring>`.
+   * `--failureScale=<number>`: Scale factor (default `1.0`) for the pixel-difference failure threshold.
+   * `--quitOnChange`: Stop the run immediately when a visual change is detected.
+
+
+## Benchmarking
+
+```
+sbt "run benchmark <url> --key=<auth-key> [--profileDir=<path>|--profile=<name>]"
+```
+
+Navigates `gngr` to `<url>` and takes a screenshot 6 times, printing per-iteration and average elapsed time in milliseconds.
 
 
 ## Checking and updating the baseline
